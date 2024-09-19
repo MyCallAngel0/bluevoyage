@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Totally Random Page</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background-color: #FFD700;
+            color: #4B0082;
+            text-align: center;
+            padding: 50px;
+        }
+        h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            animation: rainbow 3s infinite;
+        }
+        @keyframes rainbow {
+            0% { color: red; }
+            20% { color: orange; }
+            40% { color: yellow; }
+            60% { color: green; }
+            80% { color: blue; }
+            100% { color: purple; }
+        }
+        img {
+            width: 300px;
+            height: auto;
+            border: 5px solid #FF1493;
+            box-shadow: 0 0 10px #4B0082;
+        }
+        .fact {
+            font-size: 24px;
+            margin: 20px;
+            border: 3px dashed #4B0082;
+            padding: 20px;
+            background-color: #7FFFD4;
+        }
+        button {
+            background-color: #FF69B4;
+            color: white;
+            font-size: 18px;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #FF1493;
+        }
+        footer {
+            margin-top: 50px;
+            font-size: 16px;
+            color: #00008B;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Welcome to the Land of Randomness!</h1>
+
+    <img src="https://placekitten.com/300/300" alt="Random Kitten">
+
+    <div class="fact">
+        Did you know? A group of flamingos is called a "flamboyance"!
+    </div>
+
+    <button onclick="alert('Beware of invisible ducks!')">Click me for no reason</button>
+
+    <footer>
+        <p>© 2024 Random Page Inc. Proudly confusing people since yesterday.</p>
+    </footer>
+
+</body>
+</html>
