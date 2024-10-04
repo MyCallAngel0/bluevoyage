@@ -76,6 +76,7 @@
 
 </head>
 <body>
+    {% load socialaccount %}
 	<div class="container h-100">
 		<div class="d-flex justify-content-center h-100">
 			<div class="user_card">
@@ -103,13 +104,20 @@
 							<div class="d-flex justify-content-center mt-3 login_container">
 				 				<input class="btn login_btn" type="submit" value="Login">
 				   			</div>
+
+                        <!-- Google OAuth Button -->
+                        <div class="d-flex justify-content-center mt-3">
+                            <a href="{% provider_login_url 'google' %}?next=/" class="btn btn-danger">
+                                <i class="fab fa-google"></i> Login with Google
+                            </a>
+                        </div>
 					</form>
 
 				</div>
 
 				<div class="mt-4">
 					<div class="d-flex justify-content-center links">
-						Don't have an account? <a href="{% url 'register2' %}" class="ml-2">Sign Up</a>
+						Don't have an account? <a href="{% url 'register' %}" class="ml-2">Sign Up</a>
 					</div>
 
 				</div>
