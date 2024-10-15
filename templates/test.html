@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verification Page</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #e0f7fa;
+            margin: 0;
+        }
+        .verify-container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h2 {
+            color: #00796b;
+            margin-bottom: 20px;
+        }
+        #error-message {
+            color: red;
+            margin-top: 20px;
+        }
+        #success-message {
+            color: #00796b;
+            margin-top: 20px;
+        }
+        .button-container {
+            margin-top: 20px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .btn-login {
+            background-color: #00796b;
+            color: white;
+        }
+        .btn-register {
+            background-color: #4caf50;
+            color: white;
+        }
+        .btn-logout {
+            background-color: #e53935;
+            color: white;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="verify-container">
+        <h2>Verification Page</h2>
+        <div id="success-message"></div>
+        <div id="error-message"></div>
+        <div class="button-container" id="button-container"></div>
+    </div>
+
+    <script>
+        async function verifyToken() {
+            try {
+                const response = await fetch('/api/user', {
+                    method: 'GET',
+                    credentials: 'include'  // Include cookies with the request
+                });
+
+                if (!response.ok) {
+                    throw new Error('Unauthenticated'); // Handle unauthorized access
+                }
+
+                const userData = await response.json();
+                document.getElementById('success-message').innerText = `Hello, ${userData.username}! Welcome back!`;
+
+                // If the user is logged in, show the logout button
+                document.getElementById('button-container').innerHTML = `
+                    <button class="btn btn-logout" onclick="logout()">Logout</button>
+                `;
+            } catch (error) {
+                document.getElementById('error-message').innerText = "Home Page";
+
+                // If the user is not logged in, show login and register buttons
+                document.getElementById('button-container').innerHTML = `
+                    <button class="btn btn-login" onclick="window.location.href='/login'">Login</button>
+                    <button class="btn btn-register" onclick="window.location.href='/register'">Register</button>
+                `;
+            }
+        }
+
+        async function logout() {
+            try {
+                const response = await fetch('/api/logout', {
+                    method: 'POST',
+                    credentials: 'include',  // Include cookies for logout
+                });
+
+                if (response.ok) {
+                    // Redirect to login after logout
+                    window.location.href = '/login';
+                }
+            } catch (error) {
+                console.error('Error logging out:', error);
+            }
+        }
+
+        // Call the verifyToken function to check the cookie and update UI accordingly
+        verifyToken();
+    </script>
+</body>
+</html>
