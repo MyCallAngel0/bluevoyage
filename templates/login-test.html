@@ -78,6 +78,7 @@
         const errorMessage = document.getElementById('error-message');
         const verifyOtpButton = document.getElementById('verify-otp');
         let username;  // Store username for OTP verification
+        let superuser = false;
 
         // Step 1: Handle login form submission
         loginForm.addEventListener('submit', async function(event) {
@@ -100,39 +101,48 @@
                     throw new Error('Login failed');
                 }
 
-                // After successful login, show OTP section
-                loginForm.style.display = 'none';
-                otpSection.style.display = 'block';
-                errorMessage.innerText = '';
-            } catch (error) {
-                errorMessage.innerText = error.message;
-            }
-        });
+                const data = await response.json();
 
-        // Step 2: Handle OTP verification
-        verifyOtpButton.addEventListener('click', async function() {
-            const otp = document.getElementById('otp').value;
-
-            try {
-                const response = await fetch('/api/verify-otp', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ username, otp }),
-                    credentials: 'include'
-                });
-
-                if (!response.ok) {
-                    throw new Error('OTP verification failed');
+                if ('jwt' in data) {
+                    superuser = true;
+                    window.location.href = '/test';
+                    } else {
+                        // After successful login, show OTP section
+                        loginForm.style.display = 'none';
+                        otpSection.style.display = 'block';
+                        errorMessage.innerText = '';
                 }
-
-                // Redirect to a secure page (e.g., dashboard) after successful OTP verification
-                window.location.href = '/test';
             } catch (error) {
                 errorMessage.innerText = error.message;
             }
         });
+        if (!superuser) {
+            // Step 2: Handle OTP verification
+            verifyOtpButton.addEventListener('click', async function() {
+                const otp = document.getElementById('otp').value;
+
+                try {
+                    const response = await fetch('/api/verify-otp', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ username, otp }),
+                        credentials: 'include'
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('OTP verification failed');
+                    }
+
+                    // Redirect to a secure page (e.g., dashboard) after successful OTP verification
+                    window.location.href = '/test';
+                } catch (error) {
+                    errorMessage.innerText = error.message;
+                }
+            });
+        }
+
     </script>
 </body>
 </html>

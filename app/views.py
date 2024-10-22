@@ -16,7 +16,7 @@ def homePage(request):
     return render(request, 'home.html', context)
 
 
-@login_required
+@login_required(redirect_url='/login')
 def randomPage(request):
     context = {}
     return render(request, 'random.html', context)

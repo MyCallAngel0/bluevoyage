@@ -82,6 +82,26 @@ class LoginView(APIView):
         if not user.is_active:
             raise AuthenticationFailed("Account not verified!")
 
+        if user.is_staff:
+            payload = {
+                'id': user.id,
+                'exp': datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=60),
+                'iat': datetime.datetime.now(datetime.UTC)
+            }
+
+            token = jwt.encode(payload, 'secret', algorithm='HS256')
+            user.last_login = datetime.datetime.now(datetime.UTC)
+            user.save()
+
+            response = Response()
+            response.set_cookie(key='jwt', value=token, httponly=True)
+            response.data = {
+                "jwt": token,
+                "message": "Login successful"
+            }
+
+            return response
+
         otp, base32_secret = self.generate_otp()
         self.send_otp_email(user, otp)
 
@@ -93,6 +113,7 @@ class LoginView(APIView):
         secret = pyotp.random_base32()
         totp = pyotp.TOTP(secret)
         otp = totp.now()
+
         return otp, secret
 
     def send_otp_email(self, user, otp):
@@ -118,8 +139,7 @@ class VerifyOTPView(APIView):
         if not cached_otp:
             raise AuthenticationFailed("OTP expired or not generated.")
 
-        totp = pyotp.TOTP(base32_secret)
-        if not totp.verify(otp_provided):
+        if not otp_provided == cached_otp:
             raise AuthenticationFailed("Invalid OTP.")
 
         payload = {
@@ -129,6 +149,8 @@ class VerifyOTPView(APIView):
         }
 
         token = jwt.encode(payload, 'secret', algorithm='HS256')
+        user.last_login = datetime.datetime.now(datetime.UTC)
+        user.save()
 
         cache.delete(f'otp_{user.id}')
 
