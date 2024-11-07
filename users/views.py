@@ -129,13 +129,17 @@ class VerifyOTPView(APIView):
         username = request.data['username']
         otp_provided = request.data['otp']
 
-        user = User.objects.filter(username=username).first()
+        if '@' in username:
+            user = User.objects.filter(email=username).first()
+        else:
+            user = User.objects.filter(username=username).first()
 
         if not user:
             raise AuthenticationFailed("User not found.")
 
         cached_otp, base32_secret = cache.get(f'otp_{user.id}', (None, None))
-
+        print(cached_otp)
+        print(otp_provided)
         if not cached_otp:
             raise AuthenticationFailed("OTP expired or not generated.")
 
