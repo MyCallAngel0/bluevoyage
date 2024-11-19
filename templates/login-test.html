@@ -4,12 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BlueVoyage Login</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;400;600;700&display=swap">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap">
+    <title>Login Page with OTP</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
             font-family: 'Poppins', sans-serif, 'Roboto';
             display: flex;
@@ -19,78 +20,180 @@
             background: url("{% static 'images/idk.jpg' %}") no-repeat center center;
             background-size: cover;
         }
-        
-        .signup-button { 
-            position: fixed; top: 20px; right: 20px; 
-            background-color: #00b8ff; color: black; 
-            padding: 10px 15px; border: none; border-radius: 3px;
-            font-weight: 600; font-size: 14px; cursor: pointer;
-        }
-
         .wrapper {
             width: 450px;
             background-color: transparent;
             color: #fff;
             border-radius: 15px;
             padding: 50px 40px;
+}   
+        .wrapper h1 {
+            font-size: 65px;
+            color: #fff;
+            text-align: center;
+            margin-top: -50px;
+            padding-bottom: 30px;
+        }
+        .wrapper .input-box {
+            position: relative;
+            width: 100%;
+            height: 20px;
+            margin: 30px 0;
         }
 
-        .wrapper h1 { font-size: 65px; color: #fff; text-align: center; padding-bottom: 30px; }
-        
         .input-box input {
-            width: 100%; height: 45px; border: 2px solid #fff; 
-            padding: 10px; border-radius: 10px; font-size: 16px; color: #000;
-            margin-top: 15px;
+            width: 100%;
+            height: 45px;
+            border: 2px solid rgb(255, 253, 253);
+            outline: none;
+            border-radius: 10px;
+            font-size: 16px;
+            color: #000000;
+            padding: 20px 20px 20px;
+        }
+        .wrapper .terms-privacy {
+    
+            justify-content: center;
+            align-items: center;
+            font-size: 11px;
+            line-height: 20px;
+            text-align: center;
+            margin: 40px 10px 20px;
+
+        }
+        .wrapper .remember-forgot {
+            display: flex;
+            justify-content: center;
+            font-size: 15px;
+            margin: 15px 0 -15px;
+        }
+        .remember-forgot a {
+            color: #fff;
+            text-decoration: none ;
         }
 
-        .login-button, .google-signin-button {
-            width: 100%; height: 45px; border-radius: 5px; font-weight: 700;
-            font-size: 16px; cursor: pointer; margin-top: 15px;
+        .remember-forgot a:hover {
+            text-decoration: underline;
         }
-        .login-button { background: #1C342F; color: #fff; }
-        .google-signin-button { background: #fff; color: #404040; }
+
+       .login-button {
+            width: 100%;
+            height: 45px;
+            background: #1C342F;
+            outline: none;
+            border-radius: 5px;
+            box-shadow: 0 0 10px #0000001a;
+            cursor: pointer;
+            font-size: 16px;
+            color: #ffffff;
+            font-weight: 700;
+            border: 0.01em solid #3d4a48; 
+    
+       }    
+       .or-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 25px 0 15px;
+       }
+        .or-container .line {
+            flex: 1;
+            height: 1px;
+            background-color: #ffffff;
+        }
+        .or-container .or {
+            font-size: 15px;
+            font-weight: 300;
+            color: #fff;
+            margin: 0 10px;
+        }
+        #otp-section {
+            display: none;
+        }
+        #error-message {
+            color: red;
+            margin-top: 10px;
+        }
+        .google-signin-button {
+            width: 100%;
+            height: 45px;
+            background-color: #fff;
+            border: 1px solid rgba(0, 0, 0, 0.1); 
+            outline: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 16px;
+            color: #404040;
+            font-weight: 600;
+            align-items: center;
+            display:flex;
+            justify-content: center;
+            gap: 10px;
+        }
         
-        .register-link p, .terms-privacy { text-align: center; margin-top: 10px; }
-        .or-container { display: flex; align-items: center; justify-content: center; margin: 20px 0; }
         
-        .or-container .line { flex: 1; height: 1px; background-color: #fff; }
-        .or-container .or { padding: 0 10px; color: #fff; }
-        
-        #otp-section { display: none; }
-        #error-message { color: red; margin-top: 10px; text-align: center; }
+        .wrapper .register-link {
+            font-size: 14.5px;
+            text-align: center;
+            margin: 10px 0 15px;
+
+        }
+
+        .register-link p a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
-    <button class="signup-button">Sign up</button>
-
+    
     <div class="wrapper">
+
+        <!-- Step 1: Username & Password -->
         <form id="login-form">
-            <h1>BlueVoyage</h1>
+            
+        <h1>BlueVoyage</h1>    
+        <div class="input-box">
+             <input type="text" id="username" placeholder="Email" required />
+                        
+        </div>
 
-            <div class="input-box">
-                <input type="text" id="username" placeholder="Username" required>
-            </div>
-
-            <div class="input-box">
-                <input type="password" id="password" placeholder="Password" required>
-            </div>
-
-            <div class="terms-privacy">
-                <p>By logging in, you agree to BlueVoyage's Terms of Service and Privacy Policy.</p>
-            </div>
-
+        <div class="input-box">
+            <input type="password" id="password" placeholder="Password" required />
+        </div>
+        <div class="terms-privacy">
+            <p>By clicking log in, or continuing with the other options below, you agree to BlueVoyage’s Terms of Service and have read the Privacy Policy</p>
+        </div>
             <button class="login-button" type="submit">Log in</button>
+        
+        <div class="remember-forgot">
+            <a href="#">Forgot your password?</a>
+        </div>
+        <div class="or-container">
+            <span class="line"></span>
+            <span class="or">or</span>
+            <span class="line"></span>
+        </div>
+        <div class="continue">
+            <button type="button" class="google-signin-button">
+                <FaGoogle class="social-icon-google" />
+                <span>Continue with Google</span>
+            </button>
+        </div>
+        
+        <div class="register-link">
+            <p>Don't have an account? <a href="#">Sign up!</a></p>
+        </div>
+        </form>        
+        <!-- Step 2: OTP Input (hidden until needed) -->
+        <div id="otp-section">
+            <h2>Enter OTP</h2>
+            <input type="text" id="otp" placeholder="Enter OTP" required>
+            <button id="verify-otp">Verify OTP</button>
+        </div>
 
-            <div id="otp-section">
-                <h2>Enter OTP</h2>
-                <div class="input-box">
-                    <input type="text" id="otp" placeholder="Enter OTP" required>
-                </div>
-                <button id="verify-otp" class="login-button">Verify OTP</button>
-            </div>
-
-            <div id="error-message"></div>
-        </form>
+        <div id="error-message"></div>
     </div>
 
     <script>
@@ -98,58 +201,72 @@
         const otpSection = document.getElementById('otp-section');
         const errorMessage = document.getElementById('error-message');
         const verifyOtpButton = document.getElementById('verify-otp');
-        let username;
+        let username;  // Store username for OTP verification
         let superuser = false;
 
+        // Step 1: Handle login form submission
         loginForm.addEventListener('submit', async function(event) {
-            event.preventDefault();
+            event.preventDefault();  // Prevent the default form submission
+
             username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
 
             try {
                 const response = await fetch('/api/login', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
                     body: JSON.stringify({ username, password }),
-                    credentials: 'include'
+                    credentials: 'include'  // Include cookies with the request
                 });
 
-                if (!response.ok) throw new Error('Login failed');
+                if (!response.ok) {
+                    throw new Error('Login failed');
+                }
 
                 const data = await response.json();
+
                 if ('jwt' in data) {
                     superuser = true;
                     window.location.href = '/test';
-                } else {
-                    loginForm.style.display = 'none';
-                    otpSection.style.display = 'block';
-                    errorMessage.innerText = '';
+                    } else {
+                        // After successful login, show OTP section
+                        loginForm.style.display = 'none';
+                        otpSection.style.display = 'block';
+                        errorMessage.innerText = '';
                 }
             } catch (error) {
                 errorMessage.innerText = error.message;
             }
         });
-
         if (!superuser) {
+            // Step 2: Handle OTP verification
             verifyOtpButton.addEventListener('click', async function() {
                 const otp = document.getElementById('otp').value;
 
                 try {
                     const response = await fetch('/api/verify-otp', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
                         body: JSON.stringify({ username, otp }),
                         credentials: 'include'
                     });
 
-                    if (!response.ok) throw new Error('OTP verification failed');
+                    if (!response.ok) {
+                        throw new Error('OTP verification failed');
+                    }
 
+                    // Redirect to a secure page (e.g., dashboard) after successful OTP verification
                     window.location.href = '/test';
                 } catch (error) {
                     errorMessage.innerText = error.message;
                 }
             });
         }
+
     </script>
 </body>
 </html>
