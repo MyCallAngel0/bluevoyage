@@ -61,6 +61,7 @@ INSTALLED_APPS = [
 
     'app',
     'users',
+    'blogs',
 ]
 
 SOCIALACCOUNT_PROVIDERS = {
@@ -116,8 +117,8 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "bluevoyagedb",
-        "USER": "bluevoyager",
-        "PASSWORD": "mypassword",
+        "USER": "postgres",
+        "PASSWORD": "123456",
         "HOST": "127.0.0.1",
         "PORT": "5432",
     }

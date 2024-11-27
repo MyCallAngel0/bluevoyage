@@ -20,14 +20,13 @@ class RegisterView(APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        user = User.objects.filter(email=request.data.get('email')).first()
         user.is_active = False
-        user.verify_token = uuid.uuid4()
         user.save()
 
         self.send_verification_email(user)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 
     def send_verification_email(self, user):
         token = user.verify_token
