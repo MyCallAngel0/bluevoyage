@@ -40,6 +40,9 @@ ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 SITE_ID = 2
 
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [BASE_DIR / "static"]
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -49,16 +52,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
     'rest_framework',
     'corsheaders',
-
     'django.contrib.sites',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
-
     'app',
     'users',
 ]
