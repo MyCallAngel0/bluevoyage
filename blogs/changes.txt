@@ -8,3 +8,5 @@ search_by_title - adjusted for blog privacy settings
 get_blogs - adjusted for blog privacy settings
 get_comments - fixed to get comments of a blog
 get_blog - adjusted for blog privacy settings
+get_user_blogs - created function for getting all the blogs belonging to a user
+add docker support for database

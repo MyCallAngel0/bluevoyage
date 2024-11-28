@@ -7,6 +7,7 @@ urlpatterns = [
     # Single blog (individual view)
     path('get_blog', get_blog),
     path('get_blogs', get_blogs),
+    path('get_user_blogs', get_user_blogs),
     path('update_blog', update_blog),
     path('delete_blog', delete_blog),
     path('add_comment', add_comment),
