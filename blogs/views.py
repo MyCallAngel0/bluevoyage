@@ -7,14 +7,16 @@ from django.db.models import Q
 from .models import *
 from users.models import *
 # TODO: Remove @csrf_exempt after done debugging
-# TODO: change query & json to be more consistent with URI
 # TODO: Add friends, followers (& respective tables)
 # TODO: Check if blog should be displayed the user (access_level) ---- after adding followers table (public is already done)
 # TODO: Change how user_id is handled
 # TODO: Add comment likes
 # TODO: get username instead of user_id
-
+# TODO: get all blogs of a user
 # TODO: Add picture support
+# TODO: Remove ability to add interactions on private posts (except for the blog user)
+# TODO: Minor - add verification for every method (i.e., adding comments to make sure that the user has access to that post)
+
 @csrf_exempt
 def create_blog(request):
     if request.method != 'POST':
@@ -28,7 +30,6 @@ def create_blog(request):
         access_level = data.get("access_level", AccessLevel.PUBLIC.value)
         # TODO: change the way user_id is handled
         user_id = data.get("user_id")
-        # user_id = request.user.user_id
 
         if title:
             blog = Blogs.objects.create(
@@ -46,14 +47,17 @@ def create_blog(request):
 
 @csrf_exempt
 def get_blog(request):
+    # TODO: Return image along with the other data after image support is implemented 
     if request.method != 'GET':
         return JsonResponse({"error": "Method not allowed"}, status=405)
 
     try:
         blog_id = request.GET.get("blog_id")
-        if blog_id:
-            blog = Blogs.objects.get(blog_id=blog_id)
+        user_id = request.GET.get("user_id")
 
+        if blog_id and user_id:
+            blog = get_object_or_404(Blogs, blog_id=blog_id)
+            user = get_object_or_404(User, id=user_id)
             if blog:
                 blog_data = {
                     "blog_id": blog.blog_id,
@@ -63,16 +67,21 @@ def get_blog(request):
                     "access_level": blog.access_level,
                     "created_at": blog.created_at,
                     "updated_at": blog.updated_at,
+                    "blog_creator": user.username,
                 }
                 
-                if blog.access_level == 4:
+                if blog.access_level == 3 or blog.user_id == user.id:
                     return JsonResponse({"blog": blog_data}, status=200)
+                elif blog.access_level == 2:
+                    is_follower = Followers.objects.filter(follower_id=user.id, following_id=blog.user_id).exists()
+                    if is_follower:
+                        return JsonResponse({"blog": blog_data}, status=200)
                 else:
                     return JsonResponse({"error": "Not allowed"}, status=403)
             else:
                 return JsonResponse({"error": "Blog not found"}, status=404)
         else:
-            return JsonResponse({"error": "blog_id not specified in query parameters"}, status=400)
+            return JsonResponse({"error": "blog_id/user_id not specified in query parameters"}, status=400)
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
@@ -84,16 +93,43 @@ def get_blogs(request):
 
     try:
         page = int(request.GET.get("page", 1))
-        # TODO: Change how limits are handled
         limit = 5
+        user_id = request.GET.get("user_id")
+
+        if not user_id:
+            return JsonResponse({"error": "user_id is required"}, status=400)
+        
+        try:
+            user_id = int(user_id)
+        except ValueError:
+            return JsonResponse({"error": "Invalid data type"}, status=400)
+
+        user = get_object_or_404(User, id=user_id)
 
         blogs_queryset = Blogs.objects.all()
 
-        paginator = Paginator(blogs_queryset, limit)
+        allowed_blogs_queryset = []
+        for blog in blogs_queryset:
+            access_level = blog.access_level
+            blog_owner_id = blog.user_id
+
+            if blog.user_id == user.id or access_level == 3:
+                allowed_blogs_queryset.append(blog)
+            elif access_level == 2:
+                is_follower = Followers.objects.filter(follower_id=user.id, following_id=blog_owner_id).exists()
+                if is_follower:
+                    allowed_blogs_queryset.append(blog)
+
+        if not allowed_blogs_queryset:
+            return JsonResponse({"error": "No blogs found."}, status=403)
+
+        paginator = Paginator(allowed_blogs_queryset, limit)
         current_page = paginator.page(page)
 
-        blogs_data = [
-            {
+        blogs_data = []
+        for blog in current_page:
+            blog_creator = User.objects.get(id=blog.user_id)
+            blog_data = {
                 "blog_id": blog.blog_id,
                 "title": blog.title,
                 "content": blog.content,
@@ -101,14 +137,14 @@ def get_blogs(request):
                 "access_level": blog.access_level,
                 "created_at": blog.created_at,
                 "updated_at": blog.updated_at,
+                "blog_creator": blog_creator.username,
             }
-            for blog in current_page
-        ]
+            blogs_data.append(blog_data)
 
         pagination_data = {
             "current_page": page,
             "total_pages": paginator.num_pages,
-            "total_results": paginator.count,
+            "total_results": len(allowed_blogs_queryset),
             "has_next": current_page.has_next(),
             "has_previous": current_page.has_previous(),
         }
@@ -144,6 +180,13 @@ def update_blog(request):
             blog.tags = tags
         if access_level is not None:
             blog.access_level = access_level
+
+        # Remove likes, comments & bookmarks if a post is privated/followers-only
+        if blog.access_level == 1:
+            Interactions.objects.filter(blog=blog).exclude(user=blog.user).delete()
+        elif blog.access_level == 2:
+            followers = Followers.objects.filter(following=blog.user).values_list("follower_id", flat=True)
+            Interactions.objects.filter(blog=blog ).exclude(Q(user=blog.user) | Q(user_id__in=followers)).delete()
 
         blog.save()
 
@@ -248,24 +291,29 @@ def get_comments(request):
 
     try:
         page = int(request.GET.get("page", 1))
+        blog_id = request.GET.get("blog_id")
         limit = 10
 
-        comments_queryset = Comments.objects.all()
+        blog = get_object_or_404(Blogs, blog_id=blog_id)
+
+        comments_queryset = Comments.objects.filter(blog=blog)
 
         paginator = Paginator(comments_queryset, limit)
         current_page = paginator.page(page)
 
-        comments_data = [
-            {
-                "comment_id": comment.comment_id,
-                "content": comment.content,
-                "created_at": comment.created_at,
-                "updated_at": comment.updated_at,
-                "user_id": comment.user_id,
-                "blog_id": comment.blog_id,
-            }
-            for comment in current_page
-        ]
+        for comment in current_page:
+            comment_creator = User.objects.get(id=comment.user_id)
+            comments_data = [
+                {
+                    "comment_id": comment.comment_id,
+                    "content": comment.content,
+                    "created_at": comment.created_at,
+                    "updated_at": comment.updated_at,
+                    "user_id": comment.user_id,
+                    "blog_id": comment.blog_id,
+                    "comment_creator": comment_creator.username
+                }
+            ]
 
         pagination_data = {
             "current_page": page,
@@ -308,7 +356,6 @@ def edit_comment(request):
             if content.strip() == "":
                 return JsonResponse({"error": "Content cannot be empty"}, status=400)
             comment.content = content
-
 
         comment.save()
 
@@ -407,8 +454,7 @@ def get_likes(request):
         return JsonResponse({"error": "Method not allowed"}, status=405)
 
     try:
-        data = json.loads(request.body)
-        blog_id = data.get("blog_id")
+        blog_id = request.GET.get("blog_id")
 
         likes = Interactions.objects.filter(blog_id=blog_id, type=InteractionType.LIKE.value).count()
 
@@ -492,23 +538,39 @@ def add_bookmark(request):
 
 @csrf_exempt
 def get_bookmark_posts(request):
-    # TODO: Only display blogs that the user is allowed to see (access_level) + if a bookmarked post was privated, we need to remove the bookmarks once the user privates it.
-    # TODO: Maybe change how bookmarked posts are shown, as they're currently shown in the order they were added to the table (randomize?)
+    # TODO: Maybe randomize how bookmarked posts are shown
     if request.method != 'GET':
         return JsonResponse({"error": "Method not allowed"}, status=405)
 
     try:
         page = int(request.GET.get("page", 1))
-        # TODO: Change how limits are handled
+        user_id = request.GET.get("user_id")
         limit = 5
-        # TODO: Change how user_id is handled
-        data = json.loads(request.body)
-        user_id = data.get("user_id")
+
+        if not user_id:
+            return JsonResponse({"error": "User ID is required"}, status=400)
+
         bookmarked_queryset = Interactions.objects.filter(user_id=user_id, type=InteractionType.BOOKMARK.value)
-        bookmarked_blog_ids = bookmarked_queryset.values_list('blog_id', flat=True)
+        bookmarked_blog_ids = bookmarked_queryset.values_list("blog_id", flat=True)
+
         blogs_queryset = Blogs.objects.filter(blog_id__in=bookmarked_blog_ids)
 
-        paginator = Paginator(blogs_queryset, limit)
+        allowed_blogs_queryset = []
+        for blog in blogs_queryset:
+            access_level = blog.access_level
+            blog_owner_id = blog.user_id
+
+            if access_level == 3:
+                allowed_blogs_queryset.append(blog)
+            elif access_level == 2:
+                is_follower = Followers.objects.filter(follower_id=user_id, following_id=blog_owner_id).exists()
+                if is_follower:
+                    allowed_blogs_queryset.append(blog)
+
+        if not allowed_blogs_queryset:
+            return JsonResponse({"error": "No blogs found."}, status=403)
+
+        paginator = Paginator(allowed_blogs_queryset, limit)
         current_page = paginator.page(page)
 
         blogs_data = [
@@ -527,7 +589,7 @@ def get_bookmark_posts(request):
         pagination_data = {
             "current_page": page,
             "total_pages": paginator.num_pages,
-            "total_results": paginator.count,
+            "total_results": len(allowed_blogs_queryset),
             "has_next": current_page.has_next(),
             "has_previous": current_page.has_previous(),
         }
@@ -574,16 +636,24 @@ def remove_bookmark(request):
 
 @csrf_exempt
 def search_by_tag(request):
-    # TODO: Only display blogs that the user is allowed to see (access_level)
     if request.method != 'GET':
         return JsonResponse({"error": "Method not allowed"}, status=405)
 
     try:
         page = int(request.GET.get("page", 1))
-        # TODO: Change how limits are handled
+        tags = request.GET.getlist("tags")
+        user_id = request.GET.get("user_id")
         limit = 5
-        data = json.loads(request.body)
-        tags = data.get("tags", [])
+
+        if not user_id or not tags:
+            return JsonResponse({"error": "user_id & tags are required"}, status=400)
+        
+        try:
+            user_id = int(user_id)
+        except ValueError:
+            return JsonResponse({"error": "Invalid data type"}, status=400)
+
+        user = get_object_or_404(User, id=user_id)
 
         query = Q()
         for tag in tags:
@@ -591,7 +661,22 @@ def search_by_tag(request):
 
         blogs_queryset = Blogs.objects.filter(query)
 
-        paginator = Paginator(blogs_queryset, limit)
+        allowed_blogs_queryset = []
+        for blog in blogs_queryset:
+            access_level = blog.access_level
+            blog_owner_id = blog.user_id
+
+            if access_level == 3 or blog.user_id == user.id:
+                allowed_blogs_queryset.append(blog)
+            elif access_level == 2:
+                is_follower = Followers.objects.filter(follower_id=user.id, following_id=blog_owner_id).exists()
+                if is_follower:
+                    allowed_blogs_queryset.append(blog)
+
+        if not allowed_blogs_queryset:
+            return JsonResponse({"error": "No blogs found."}, status=403)
+
+        paginator = Paginator(allowed_blogs_queryset, limit)
         current_page = paginator.page(page)
 
         blogs_data = [
@@ -607,46 +692,58 @@ def search_by_tag(request):
             for blog in current_page
         ]
 
-        allowed_blogs_data = [
-            blog_data for blog_data in blogs_data if blog_data["access_level"] == 3
-        ]
-
-        if not allowed_blogs_data:
-            return JsonResponse({"error": "No blogs found."}, status=403)
-
-
         pagination_data = {
             "current_page": page,
             "total_pages": paginator.num_pages,
-            "total_results": paginator.count,
+            "total_results": len(allowed_blogs_queryset),
             "has_next": current_page.has_next(),
             "has_previous": current_page.has_previous(),
         }
 
-        return JsonResponse({"blogs": allowed_blogs_data, "pagination": pagination_data}, status=200)
-
+        return JsonResponse({"blogs": blogs_data, "pagination": pagination_data}, status=200)
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
 @csrf_exempt
 def search_by_title(request):
-    # TODO: Only display blogs that the user is allowed to see (access_level)
     if request.method != 'GET':
         return JsonResponse({"error": "Method not allowed"}, status=405)
 
     try:
         page = int(request.GET.get("page", 1))
         title = request.GET.get("title")
-        # TODO: Change how limits are handled
+        user_id = request.GET.get("user_id")
         limit = 5
 
-        if not title:
-            return JsonResponse({"error": "Title is required"}, status=400)
+        if not user_id or not title:
+            return JsonResponse({"error": "user_id & title are required"}, status=400)
+        
+        try:
+            user_id = int(user_id)
+        except ValueError:
+            return JsonResponse({"error": "Invalid data type"}, status=400)
+
+        user = get_object_or_404(User, id=user_id)
 
         blogs_queryset = Blogs.objects.filter(title__icontains=title)
 
-        paginator = Paginator(blogs_queryset, limit)
+        allowed_blogs_queryset = []
+        for blog in blogs_queryset:
+            access_level = blog.access_level
+            blog_owner_id = blog.user_id
+
+            if access_level == 3 or blog.user_id == user.id:
+                allowed_blogs_queryset.append(blog)
+            elif access_level == 2:
+                is_follower = Followers.objects.filter(follower_id=user.id, following_id=blog_owner_id).exists()
+                if is_follower:
+                    allowed_blogs_queryset.append(blog)
+
+        if not allowed_blogs_queryset:
+            return JsonResponse({"error": "No blogs found."}, status=403)
+
+        paginator = Paginator(allowed_blogs_queryset, limit)
         current_page = paginator.page(page)
 
         blogs_data = [
@@ -662,22 +759,15 @@ def search_by_title(request):
             for blog in current_page
         ]
 
-        allowed_blogs_data = [
-            blog_data for blog_data in blogs_data if blog_data["access_level"] == 3
-        ]
-
-        if not allowed_blogs_data:
-            return JsonResponse({"error": "No blogs found."}, status=403)
-
         pagination_data = {
             "current_page": page,
             "total_pages": paginator.num_pages,
-            "total_results": paginator.count,
+            "total_results": len(allowed_blogs_queryset),
             "has_next": current_page.has_next(),
             "has_previous": current_page.has_previous(),
         }
 
-        return JsonResponse({"blogs": allowed_blogs_data, "pagination": pagination_data}, status=200)
+        return JsonResponse({"blogs": blogs_data, "pagination": pagination_data}, status=200)
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
@@ -734,9 +824,9 @@ def unfollow_user(request):
         follower = get_object_or_404(User, id=follower_id)
         following = get_object_or_404(User, id=following_id)
 
-        follower = get_object_or_404(Followers, follower=follower, following=following)
+        follow = get_object_or_404(Followers, follower=follower, following=following)
         #TODO: check if follower id = user_id
-        follower.delete()
+        follow.delete()
 
         return JsonResponse({"message": "Follow deleted successfully"}, status=200)
 
