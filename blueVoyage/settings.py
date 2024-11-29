@@ -119,7 +119,7 @@ DATABASES = {
         "NAME": "bluevoyagedb",
         "USER": "postgres",
         "PASSWORD": "123456",
-        "HOST": "db",
+        "HOST": "localhost",
         "PORT": "5432",
     }
 }

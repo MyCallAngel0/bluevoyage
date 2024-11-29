@@ -6,6 +6,8 @@ import json
 from django.db.models import Q
 from .models import *
 from users.models import *
+import jwt
+from rest_framework.exceptions import AuthenticationFailed
 # TODO: Remove @csrf_exempt after done debugging
 # TODO: Add comment likes
 # TODO: Add picture support
@@ -28,7 +30,19 @@ def create_blog(request):
         content = data.get("content")
         tags = data.get("tags")
         access_level = data.get("access_level", AccessLevel.PUBLIC.value)
-        user_id = request.user.id
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return JsonResponse({"error": "Token is missing"}, status=403)
+
+        token = auth_header.split(" ")[1]
+
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            user_id = payload.get('id')
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Token has expired.")
+        except jwt.InvalidTokenError:
+            raise AuthenticationFailed("Invalid token.")
 
         if not user_id:
             return JsonResponse({"error": "login required for this action"}, status=403)
@@ -62,13 +76,27 @@ def create_blog(request):
 
 @csrf_exempt
 def get_blog(request):
-    # TODO: Return image along with the other data after image support is implemented 
     if request.method != 'GET':
         return JsonResponse({"error": "Method not allowed"}, status=405)
 
     try:
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return JsonResponse({"error": "Token is missing"}, status=403)
+
+        token = auth_header.split(" ")[1]
+
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            user_id = payload.get('id')
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Token has expired.")
+        except jwt.InvalidTokenError:
+            raise AuthenticationFailed("Invalid token.")
+
+        user = get_object_or_404(User, id=user_id)
+
         blog_id = request.GET.get("blog_id")
-        user_id = request.user.id
 
         if not blog_id.isdigit():
             return JsonResponse({"error": "blog_id must be an integer"}, status=400)
@@ -78,31 +106,30 @@ def get_blog(request):
         
         if not user_id:
             return JsonResponse({"error": "login required for this action"}, status=403)
-        
+
         blog = get_object_or_404(Blogs, blog_id=blog_id)
-        user = get_object_or_404(User, id=user_id)
-        if blog:
-            blog_data = {
-                "blog_id": blog.blog_id,
-                "title": blog.title,
-                "content": blog.content,
-                "tags": blog.tags,
-                "access_level": blog.access_level,
-                "created_at": blog.created_at,
-                "updated_at": blog.updated_at,
-                "blog_creator": user.username,
-            }
-            
-            if blog.access_level == 3 or blog.user_id == user.id:
+
+        blog_data = {
+            "blog_id": blog.blog_id,
+            "title": blog.title,
+            "content": blog.content,
+            "tags": blog.tags,
+            "access_level": blog.access_level,
+            "created_at": blog.created_at,
+            "updated_at": blog.updated_at,
+            "blog_creator": user.username,
+        }
+
+        if blog.access_level == 3 or blog.user_id == user.id:
+            return JsonResponse({"blog": blog_data}, status=200)
+        elif blog.access_level == 2:
+            is_follower = Followers.objects.filter(follower_id=user.id, following_id=blog.user_id).exists()
+            if is_follower:
                 return JsonResponse({"blog": blog_data}, status=200)
-            elif blog.access_level == 2:
-                is_follower = Followers.objects.filter(follower_id=user.id, following_id=blog.user_id).exists()
-                if is_follower:
-                    return JsonResponse({"blog": blog_data}, status=200)
             else:
                 return JsonResponse({"error": "Not allowed"}, status=403)
         else:
-            return JsonResponse({"error": "Blog not found"}, status=404)
+            return JsonResponse({"error": "Not allowed"}, status=403)
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
@@ -114,8 +141,20 @@ def get_blogs(request):
 
     try:
         page = int(request.GET.get("page", 1))
-        user_id = request.user.id
         limit = 5
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return JsonResponse({"error": "Token is missing"}, status=403)
+
+        token = auth_header.split(" ")[1]
+
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            user_id = payload.get('id')
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Token has expired.")
+        except jwt.InvalidTokenError:
+            raise AuthenticationFailed("Invalid token.")
 
         if not user_id:
             return JsonResponse({"error": "login required for this action"}, status=403)
@@ -178,8 +217,20 @@ def get_user_blogs(request):
     try:
         page = int(request.GET.get("page", 1))
         searched_user_id = request.GET.get("searched_user_id")
-        user_id = request.user.id
         limit = 5
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return JsonResponse({"error": "Token is missing"}, status=403)
+
+        token = auth_header.split(" ")[1]
+
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            user_id = payload.get('id')
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Token has expired.")
+        except jwt.InvalidTokenError:
+            raise AuthenticationFailed("Invalid token.")
 
         if not user_id:
             return JsonResponse({"error": "login required for this action"}, status=403)
@@ -260,7 +311,19 @@ def update_blog(request):
         tags = data.get("tags")
         access_level = data.get("access_level")
         blog_id = data.get("blog_id")
-        user_id = request.user.id
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return JsonResponse({"error": "Token is missing"}, status=403)
+
+        token = auth_header.split(" ")[1]
+
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            user_id = payload.get('id')
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Token has expired.")
+        except jwt.InvalidTokenError:
+            raise AuthenticationFailed("Invalid token.")
 
         if not user_id:
             return JsonResponse({"error": "login required for this action"}, status=403)
@@ -315,7 +378,19 @@ def delete_blog(request):
     
     try:
         blog_id = request.GET.get("blog_id")
-        user_id = request.user.id
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return JsonResponse({"error": "Token is missing"}, status=403)
+
+        token = auth_header.split(" ")[1]
+
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            user_id = payload.get('id')
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Token has expired.")
+        except jwt.InvalidTokenError:
+            raise AuthenticationFailed("Invalid token.")
 
         if not user_id:
             return JsonResponse({"error": "login required for this action"}, status=403)
@@ -349,7 +424,19 @@ def add_comment(request):
         data = json.loads(request.body)
         content = data.get("content")
         blog_id = data.get("blog_id")
-        user_id = request.user.id
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return JsonResponse({"error": "Token is missing"}, status=403)
+
+        token = auth_header.split(" ")[1]
+
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            user_id = payload.get('id')
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Token has expired.")
+        except jwt.InvalidTokenError:
+            raise AuthenticationFailed("Invalid token.")
 
         if not user_id:
             return JsonResponse({"error": "login required for this action"}, status=403)
@@ -362,6 +449,13 @@ def add_comment(request):
 
         blog = get_object_or_404(Blogs, pk=blog_id)
         user = get_object_or_404(User, pk=user_id)
+
+        if blog.access_level == 1:
+            return JsonResponse({"error": "Invalid action"}, status=403)
+        elif blog.access_level == 2:
+            is_follower = Followers.objects.filter(follower_id=user.id, following_id=blog.user_id).exists()
+            if not is_follower:
+                return JsonResponse({"error": "Invalid action"}, status=403)
 
         interaction = Interactions.objects.create(
             user=user,
@@ -393,8 +487,20 @@ def get_comments(request):
     try:
         page = int(request.GET.get("page", 1))
         blog_id = request.GET.get("blog_id")
-        user_id = request.user.id
         limit = 10
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return JsonResponse({"error": "Token is missing"}, status=403)
+
+        token = auth_header.split(" ")[1]
+
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            user_id = payload.get('id')
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Token has expired.")
+        except jwt.InvalidTokenError:
+            raise AuthenticationFailed("Invalid token.")
 
         if not user_id:
             return JsonResponse({"error": "login required for this action"}, status=403)
@@ -444,7 +550,19 @@ def edit_comment(request):
         data = json.loads(request.body)
         content = data.get("content")
         comment_id = data.get("comment_id")
-        user_id = request.user.id
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return JsonResponse({"error": "Token is missing"}, status=403)
+
+        token = auth_header.split(" ")[1]
+
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            user_id = payload.get('id')
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Token has expired.")
+        except jwt.InvalidTokenError:
+            raise AuthenticationFailed("Invalid token.")
 
         if not user_id:
             return JsonResponse({"error": "login required for this action"}, status=403)
@@ -489,7 +607,19 @@ def delete_comment(request):
     
     try:
         comment_id = request.GET.get("comment_id")
-        user_id = request.user.id
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return JsonResponse({"error": "Token is missing"}, status=403)
+
+        token = auth_header.split(" ")[1]
+
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            user_id = payload.get('id')
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Token has expired.")
+        except jwt.InvalidTokenError:
+            raise AuthenticationFailed("Invalid token.")
         
         if not user_id:
             return JsonResponse({"error": "login required for this action"}, status=403)
@@ -530,7 +660,19 @@ def add_like(request):
     try:
         data = json.loads(request.body)
         blog_id = data.get("blog_id")
-        user_id = request.user.id
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return JsonResponse({"error": "Token is missing"}, status=403)
+
+        token = auth_header.split(" ")[1]
+
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            user_id = payload.get('id')
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Token has expired.")
+        except jwt.InvalidTokenError:
+            raise AuthenticationFailed("Invalid token.")
 
         if not user_id:
             return JsonResponse({"error": "login required for this action"}, status=403)
@@ -566,7 +708,19 @@ def get_likes(request):
 
     try:
         blog_id = request.GET.get("blog_id")
-        user_id = request.user.id
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return JsonResponse({"error": "Token is missing"}, status=403)
+
+        token = auth_header.split(" ")[1]
+
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            user_id = payload.get('id')
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Token has expired.")
+        except jwt.InvalidTokenError:
+            raise AuthenticationFailed("Invalid token.")
 
         if not user_id:
             return JsonResponse({"error": "login required for this action"}, status=403)
@@ -590,7 +744,19 @@ def delete_like(request):
     
     try:
         blog_id = request.GET.get("blog_id")
-        user_id = request.user.id
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return JsonResponse({"error": "Token is missing"}, status=403)
+
+        token = auth_header.split(" ")[1]
+
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            user_id = payload.get('id')
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Token has expired.")
+        except jwt.InvalidTokenError:
+            raise AuthenticationFailed("Invalid token.")
 
         if not user_id:
             return JsonResponse({"error": "login required for this action"}, status=403)
@@ -623,7 +789,19 @@ def add_bookmark(request):
     try:
         data = json.loads(request.body)
         blog_id = data.get("blog_id")
-        user_id = request.user.id
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return JsonResponse({"error": "Token is missing"}, status=403)
+
+        token = auth_header.split(" ")[1]
+
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            user_id = payload.get('id')
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Token has expired.")
+        except jwt.InvalidTokenError:
+            raise AuthenticationFailed("Invalid token.")
 
         if not user_id:
             return JsonResponse({"error": "login required for this action"}, status=403)
@@ -661,8 +839,20 @@ def get_bookmark_posts(request):
 
     try:
         page = int(request.GET.get("page", 1))
-        user_id = request.user.id
         limit = 5
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return JsonResponse({"error": "Token is missing"}, status=403)
+
+        token = auth_header.split(" ")[1]
+
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            user_id = payload.get('id')
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Token has expired.")
+        except jwt.InvalidTokenError:
+            raise AuthenticationFailed("Invalid token.")
 
         if not user_id:
             return JsonResponse({"error": "login required for this action"}, status=403)
@@ -723,7 +913,19 @@ def remove_bookmark(request):
     
     try:
         blog_id = request.GET.get("blog_id")
-        user_id = request.user.id
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return JsonResponse({"error": "Token is missing"}, status=403)
+
+        token = auth_header.split(" ")[1]
+
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            user_id = payload.get('id')
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Token has expired.")
+        except jwt.InvalidTokenError:
+            raise AuthenticationFailed("Invalid token.")
 
         if not user_id:
             return JsonResponse({"error": "login required for this action"}, status=403)
@@ -761,8 +963,20 @@ def search_by_tag(request):
     try:
         page = int(request.GET.get("page", 1))
         tags = request.GET.getlist("tags")
-        user_id = request.user.id
         limit = 5
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return JsonResponse({"error": "Token is missing"}, status=403)
+
+        token = auth_header.split(" ")[1]
+
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            user_id = payload.get('id')
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Token has expired.")
+        except jwt.InvalidTokenError:
+            raise AuthenticationFailed("Invalid token.")
 
         if not user_id:
             return JsonResponse({"error": "login required for this action"}, status=403)
@@ -830,8 +1044,20 @@ def search_by_title(request):
     try:
         page = int(request.GET.get("page", 1))
         title = request.GET.get("title")
-        user_id = request.user.id
         limit = 5
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return JsonResponse({"error": "Token is missing"}, status=403)
+
+        token = auth_header.split(" ")[1]
+
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            user_id = payload.get('id')
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Token has expired.")
+        except jwt.InvalidTokenError:
+            raise AuthenticationFailed("Invalid token.")
 
         if not user_id:
             return JsonResponse({"error": "login required for this action"}, status=403)
@@ -894,8 +1120,20 @@ def follow_user(request):
 
     try:
         data = json.loads(request.body)
-        follower_id = request.user.id
         following_id = data.get("following_id")
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return JsonResponse({"error": "Token is missing"}, status=403)
+
+        token = auth_header.split(" ")[1]
+
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            follower_id = payload.get('id')
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Token has expired.")
+        except jwt.InvalidTokenError:
+            raise AuthenticationFailed("Invalid token.")
 
         if not follower_id:
             return JsonResponse({"error": "login required for this action"}, status=403)
@@ -932,8 +1170,20 @@ def unfollow_user(request):
         return JsonResponse({"error": "Method not allowed"}, status=405)
     
     try:
-        follower_id = request.user.id
         following_id = request.GET.get("following_id")
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return JsonResponse({"error": "Token is missing"}, status=403)
+
+        token = auth_header.split(" ")[1]
+
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            follower_id = payload.get('id')
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Token has expired.")
+        except jwt.InvalidTokenError:
+            raise AuthenticationFailed("Invalid token.")
 
         if not follower_id:
             return JsonResponse({"error": "login required for this action"}, status=403)
@@ -959,7 +1209,19 @@ def get_followers(request):
 
     try:
         following_id = request.GET.get("following_id")
-        user_id = request.user.id
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return JsonResponse({"error": "Token is missing"}, status=403)
+
+        token = auth_header.split(" ")[1]
+
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            user_id = payload.get('id')
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed("Token has expired.")
+        except jwt.InvalidTokenError:
+            raise AuthenticationFailed("Invalid token.")
 
         if not user_id:
             return JsonResponse({"error": "login required for this action"}, status=403)
