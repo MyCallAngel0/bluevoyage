@@ -9,4 +9,9 @@ get_blogs - adjusted for blog privacy settings
 get_comments - fixed to get comments of a blog
 get_blog - adjusted for blog privacy settings
 get_user_blogs - created function for getting all the blogs belonging to a user
-add docker support for database
+add docker support for webserver & database
+user_id is now received via request.user.id (jwt token auth is required)
+merge with branch user-profile
+fixed registration & otp generation
+added jwt token auth verification for every method
+fix adding methods to private posts

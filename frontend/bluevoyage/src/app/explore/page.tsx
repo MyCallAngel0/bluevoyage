@@ -18,18 +18,34 @@ interface Post {
 
 const ExplorePage = () => {
   const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(false); // Track loading state
-  const [error, setError] = useState<string | null>(null); // Track error state
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalResults: 0,
+    hasNext: false,
+    hasPrevious: false,
+  });
 
-  // Fetch posts from the backend
-  const fetchPosts = async () => {
-    setLoading(true); // Set loading to true when fetching
-    setError(null); // Reset error before fetching
+  // Function to fetch posts from the backend
+  const fetchPosts = async (page: number) => {
+    setLoading(true);
+    setError(null);
     try {
-      const response = await fetch('http://localhost:8000/api/get_blogs');
+      // Instead of getting the token from localStorage, rely on the cookie
+      const response = await fetch(`http://127.0.0.1:8000/api/get_blogs?page=${page}`, {
+        method: 'GET',
+        headers: {
+          // No need to manually set Authorization header since the cookie will be sent automatically
+        },
+        credentials: 'include', // Ensure cookies (including JWT) are sent with the request
+      });
+
       if (response.ok) {
-        const data = await response.json() as Post[];
-        setPosts(data);
+        const data = await response.json() as { blogs: Post[]; pagination: { currentPage: number; totalPages: number; totalResults: number; hasNext: boolean; hasPrevious: boolean } };
+        setPosts(data.blogs);
+        setPagination(data.pagination);
       } else {
         setError('Error fetching posts');
       }
@@ -37,13 +53,14 @@ const ExplorePage = () => {
       console.error('Error fetching posts:', error);
       setError('An error occurred while fetching posts');
     } finally {
-      setLoading(false); // Set loading to false after fetch completes
+      setLoading(false);
     }
   };
 
+  // Fetch posts on component mount and when the page changes
   useEffect(() => {
-    fetchPosts().catch((error) => console.error('Failed to load posts', error));
-  }, []);
+    fetchPosts(pagination.currentPage).catch((error) => console.error('Failed to load posts', error));
+  }, [pagination.currentPage]);
 
   return (
     <div className="explore-container pt-16 min-h-screen bg-gradient-to-b from-[#03045E] to-[#0077B6]">
@@ -83,6 +100,25 @@ const ExplorePage = () => {
       ) : (
         !loading && <p>No posts available.</p>
       )}
+
+      {/* Pagination Controls */}
+      <div className="pagination-controls">
+        <button
+          onClick={() => setPagination((prev) => ({ ...prev, currentPage: prev.currentPage - 1 }))}
+          disabled={!pagination.hasPrevious || loading}
+        >
+          Previous
+        </button>
+        <span>
+          Page {pagination.currentPage} of {pagination.totalPages}
+        </span>
+        <button
+          onClick={() => setPagination((prev) => ({ ...prev, currentPage: prev.currentPage + 1 }))}
+          disabled={!pagination.hasNext || loading}
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 };

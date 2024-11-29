@@ -23,7 +23,6 @@ export default function HomePage() {
         >
           Create Post
         </Link>
-
         {/* Sign Up Button */}
         <Link
           href="/signup"

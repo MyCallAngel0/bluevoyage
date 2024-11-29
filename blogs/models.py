@@ -48,6 +48,12 @@ class Blogs(models.Model):
         for tag in self.tags:
             if len(tag) > 30:
                 raise ValidationError(f"Tag '{tag}' exceeds the maximum length of 30 characters.")
+        
+        if len(self.title) > 50:
+            raise ValidationError("The title exceeds the maximum length of 50 characters.")
+
+        if len(self.content) > 2500:
+            raise ValidationError("The content exceeds the maximum length of 2500 characters.")
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -79,8 +85,16 @@ class Comments(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def clean(self):
+        if len(self.content) > 200:
+            raise ValidationError("The comment content exceeds the maximum length of 200 characters.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
     class Meta:
-        db_table = "comments" 
+        db_table = "comments"
 
 
 # Table for interactions; references auth_user & blogs
@@ -120,15 +134,6 @@ class Followers(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["follower", "following"], name="unique_following"
-            )
-        ]
-        db_table = "followers" 
-        
-
     def clean(self):
         if self.follower == self.following:
             raise ValidationError("A user cannot follow themselves.")
@@ -136,3 +141,11 @@ class Followers(models.Model):
     def save(self, *args, **kwargs):
         self.clean()
         super().save(*args, **kwargs)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["follower", "following"], name="unique_following"
+            )
+        ]
+        db_table = "followers" 

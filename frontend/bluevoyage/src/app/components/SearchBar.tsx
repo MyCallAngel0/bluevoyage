@@ -43,7 +43,7 @@ export default function SearchBar({ onSearchResults }: SearchBarProps) {
     setLoading(true); // Set loading state when search starts
     setError(null); // Reset any errors
     try {
-      const response = await fetch(`http://localhost:8000/api/search_posts?query=${searchTerm}`);
+      const response = await fetch(`http://localhost:8000/api/get_blogs?query=${searchTerm}`);
       if (response.ok) {
         const data = await response.json() as Post[];
         onSearchResults(data); // Pass the search results to the parent component

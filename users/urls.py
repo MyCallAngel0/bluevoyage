@@ -8,4 +8,5 @@ urlpatterns = [
     path('logout', LogoutView.as_view()),
     path('verify/<uuid:token>', VerifyEmailView.as_view()),
     path('verify-otp', VerifyOTPView.as_view()),
+    path('profile/<int:pk>', UserProfileView.as_view()),
 ]

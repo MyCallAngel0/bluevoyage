@@ -36,7 +36,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '0.0.0.0']
 
 SITE_ID = 2
 
@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',
     'app',
     'users',
+    'blogs',
 ]
 
 SOCIALACCOUNT_PROVIDERS = {
@@ -116,9 +117,9 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "bluevoyagedb",
-        "USER": "bluevoyager",
-        "PASSWORD": "mypassword",
-        "HOST": "127.0.0.1",
+        "USER": "postgres",
+        "PASSWORD": "1924",
+        "HOST": "localhost",
         "PORT": "5432",
     }
 }

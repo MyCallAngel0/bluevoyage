@@ -13,12 +13,18 @@ interface Article {
 interface User {
   name: string;
   email: string;
+  first_name: string;
+  last_name: string;
+  bio: string;
 }
 
 export default function ProfilePage() {
   const router = useRouter();
   const [userName, setUserName] = useState<string>("");
   const [userEmail, setUserEmail] = useState<string>("");
+  const [firstName, setFirstName] = useState<string>("");
+  const [lastName, setLastName] = useState<string>("");
+  const [bio, setBio] = useState<string>("");
   const [editMode, setEditMode] = useState<boolean>(false);
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -27,15 +33,18 @@ export default function ProfilePage() {
   // Fetch user information and articles from the API
   const fetchProfileData = async (): Promise<void> => {
     try {
-      const userResponse = await fetch("/api/get_user_info"); // API endpoint to get user info
+      const userResponse = await fetch("http://127.0.0.1:8000/api/profile/<int:pk>"); // API endpoint to get user data
       if (!userResponse.ok) {
         throw new Error("Failed to fetch user data");
       }
       const userData: User = await userResponse.json() as User;
       setUserName(userData.name);
       setUserEmail(userData.email);
+      setFirstName(userData.first_name);
+      setLastName(userData.last_name);
+      setBio(userData.bio);
 
-      const articlesResponse = await fetch(`/api/get_articles?author=${userData.name}`); // API endpoint to get user's articles
+      const articlesResponse = await fetch(`http://127.0.0.1:8000/api/get_blogs?user=${userData.name}`); // API endpoint to get user's articles
       if (!articlesResponse.ok) {
         throw new Error("Failed to fetch articles");
       }
@@ -44,7 +53,6 @@ export default function ProfilePage() {
 
       setLoading(false); // Set loading to false after data is fetched
     } catch (error: unknown) {
-      // Ensure error is treated as an instance of Error
       if (error instanceof Error) {
         setError(error.message); // Set error message to state
       } else {
@@ -55,20 +63,26 @@ export default function ProfilePage() {
   };
 
   useEffect(() => {
-    // Await the fetchProfileData function or handle with .catch
     fetchProfileData().catch((err) => {
       console.error("Error in fetchProfileData:", err);
     });
   }, []);
 
+  // Handle saving profile changes
   const handleSaveSettings = async () => {
     try {
-      const response = await fetch("localhost/api/get_", {
-        method: "POST",
+      const response = await fetch("/api/user-profile", {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name: userName, email: userEmail }),
+        body: JSON.stringify({
+          first_name: firstName,
+          last_name: lastName,
+          bio: bio,
+          email: userEmail,
+          username: userName,
+        }),
       });
 
       if (!response.ok) {
@@ -76,7 +90,7 @@ export default function ProfilePage() {
       }
 
       setEditMode(false); // Exit edit mode after saving
-      console.log("Saved settings:", { userName, userEmail });
+      console.log("Saved settings:", { firstName, lastName, bio, userEmail, userName });
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.error("Error saving settings:", error.message);
@@ -123,6 +137,32 @@ export default function ProfilePage() {
                   className="w-full p-2 border border-gray-300 rounded-lg"
                 />
               </div>
+              <div className="mb-4">
+                <label className="block text-gray-700">First Name</label>
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-gray-700">Last Name</label>
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-gray-700">Bio</label>
+                <textarea
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-lg"
+                />
+              </div>
               <button
                 onClick={handleSaveSettings}
                 className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
@@ -134,6 +174,7 @@ export default function ProfilePage() {
             <div>
               <p className="text-gray-600">Name: {userName}</p>
               <p className="text-gray-600">Email: {userEmail}</p>
+              <p className="text-gray-600">Bio: {bio}</p>
               <button
                 onClick={() => setEditMode(true)}
                 className="text-blue-600 hover:underline mt-4"
@@ -158,18 +199,6 @@ export default function ProfilePage() {
               ))
             )}
           </ul>
-        </div>
-
-        {/* Settings Section */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-2xl font-semibold mb-4">Settings</h2>
-          <p className="text-gray-600 mb-2">Change your profile settings here.</p>
-          <button
-            onClick={() => router.push('/profile-settings')}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            Go to Settings
-          </button>
         </div>
       </div>
     </main>

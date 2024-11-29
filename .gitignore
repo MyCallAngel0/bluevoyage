@@ -1,3 +1,4 @@
 .idea
 blueVoyage/.env
 node_modules
+.env
