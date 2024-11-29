@@ -1,0 +1,7 @@
+# Database server: PostgreSQL
+FROM postgres:17
+
+# Copy the backup SQL file into the image
+COPY ./bluevoyagedb_backup.sql /docker-entrypoint-initdb.d/
+
+# The backup file will be executed on container startup, restoring the database

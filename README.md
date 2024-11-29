@@ -9,3 +9,8 @@ docker compose exec web python manage.py makemigrations
 
 docker compose exec web python manage.py migrate
 ```
+
+
+Update - working with docker hub:
+1. To pull from remote: docker pull lucianlupan/pbl:database
+2. To push to remote: docker push lucianlupan/pbl:latest

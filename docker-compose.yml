@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   db:
-    image: lucianlupan/pbl:database
+    build:
+      context: .
+      dockerfile: Dockerfile.db
     container_name: db_server
     ports:
       - 5433:5432
@@ -16,7 +18,9 @@ services:
       - .env
 
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.web
     container_name: wb_server
     volumes:
       - .:/app
