@@ -4,6 +4,7 @@ import uuid
 
 
 class UserSerializer(serializers.ModelSerializer):
+    """Serializer used to get the sign-up data"""
     class Meta:
         model = User
         fields = ['id', 'first_name', 'last_name', 'username', 'email', 'password', 'verify_token']

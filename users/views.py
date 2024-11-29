@@ -12,14 +12,19 @@ import uuid
 from django.conf import settings
 from django.core.cache import cache
 import pyotp
+from django.views.decorators.csrf import csrf_exempt
 
 
 class RegisterView(APIView):
+    """API that manages signing up"""
     def post(self, request):
+        # Gets the user information from client
         serializer = UserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
+        # User will get its account unverified until they will access the verification link sent to their email
+        user = User.objects.filter(email=request.data.get('email')).first()
         user.is_active = False
         user.save()
 
@@ -29,17 +34,21 @@ class RegisterView(APIView):
 
 
     def send_verification_email(self, user):
+        # Creates a verification link using the token created above
         token = user.verify_token
         verification_link = f"127.0.0.1:8000/api/verify/{token}"  # Adjust this link as needed
 
+        # Sends email with verification link to the user
         subject = 'Email Verification'
         message = f'Please verify your email by clicking the following link: {verification_link}'
         send_mail(subject, message, 'noreply@yourdomain.com', [user.email])
 
 
 class VerifyEmailView(APIView):
+    """API used for verifying your account after registering"""
     def get(self, request, token):
         try:
+            # Account gets verified and user gets sent to login afterwards
             user = User.objects.get(verify_token=token)
             user.is_active = True
             user.verify_token = None
@@ -63,24 +72,29 @@ class VerifyEmailView(APIView):
 
 
 class LoginView(APIView):
+    """API that takes care of login"""
     def post(self, request):
         username = request.data.get('username')
         password = request.data['password']
 
+        # Checks if you log in with email or username
         if '@' in username:
             user = User.objects.filter(email=username).first()
         else:
             user = User.objects.filter(username=username).first()
 
+        # Validates the user
         if user is None:
             raise AuthenticationFailed("User not found!")
 
         if not user.check_password(password):
             raise AuthenticationFailed("Incorrect password!")
 
+        # If the user didn't verify the account before logging in
         if not user.is_active:
             raise AuthenticationFailed("Account not verified!")
 
+        # If you're an admin you can skip the OTP part
         if user.is_staff:
             payload = {
                 'id': user.id,
@@ -101,6 +115,7 @@ class LoginView(APIView):
 
             return response
 
+        # Creates an OTP that gets sent on your email
         otp, base32_secret = self.generate_otp()
         self.send_otp_email(user, otp)
 
@@ -108,6 +123,7 @@ class LoginView(APIView):
 
         return Response({'message': 'OTP sent. Please check your email to complete login.'})
 
+    # Method that generates the OTP
     def generate_otp(self):
         secret = pyotp.random_base32()
         totp = pyotp.TOTP(secret)
@@ -115,6 +131,7 @@ class LoginView(APIView):
 
         return otp, secret
 
+    # Method that sends the OTP to the user's email
     def send_otp_email(self, user, otp):
         subject = 'Your OTP for login'
         message = f'Your One-Time Password (OTP) is {otp}'
@@ -124,23 +141,30 @@ class LoginView(APIView):
 
 
 class VerifyOTPView(APIView):
+    """API class used to verify the OTP"""
     def post(self, request):
         username = request.data['username']
         otp_provided = request.data['otp']
 
-        user = User.objects.filter(username=username).first()
+        # Checks if the user has logged in with email or username
+        if '@' in username:
+            user = User.objects.filter(email=username).first()
+        else:
+            user = User.objects.filter(username=username).first()
 
+        # Validates user
         if not user:
             raise AuthenticationFailed("User not found.")
 
+        # Gets the OTP from cache and compares it to the inserted OTP
         cached_otp, base32_secret = cache.get(f'otp_{user.id}', (None, None))
-
         if not cached_otp:
             raise AuthenticationFailed("OTP expired or not generated.")
 
         if not otp_provided == cached_otp:
             raise AuthenticationFailed("Invalid OTP.")
 
+        # Creates a JWT token once the user inserts the correct OTP
         payload = {
             'id': user.id,
             'exp': datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=60),
@@ -151,6 +175,7 @@ class VerifyOTPView(APIView):
         user.last_login = datetime.datetime.now(datetime.UTC)
         user.save()
 
+        # Removes the OTP from the cache
         cache.delete(f'otp_{user.id}')
 
         response = Response()
@@ -164,6 +189,7 @@ class VerifyOTPView(APIView):
 
 
 class LogoutView(APIView):
+    """API that logs the user out by removing the JWT token"""
     def post(self, request):
         response = Response()
         response.delete_cookie('jwt')
@@ -174,9 +200,42 @@ class LogoutView(APIView):
 
 
 class UserView(APIView):
+    """API that gets user data using the JWT token"""
     def get(self, request):
         token = request.COOKIES.get('jwt')
 
+        # Validates and decodes token
+        if not token:
+            raise AuthenticationFailed('Unauthenticated')
+
+        try:
+            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed('Session expired!')
+
+        # Searches for the user with the id taken from JWT token
+        user = User.objects.filter(id=payload['id']).values('id', 'username', 'email', 'first_name', 'last_name').first()
+
+        return Response(user)
+
+
+class UserProfileView(APIView):
+    """API that gets you the profile page of a user"""
+    @csrf_exempt
+    def get(self, request, pk):
+        user = (User.objects.filter(id=pk)
+                .values('id', 'username', 'email', 'first_name', 'last_name', 'bio').first())
+        user_profile = [user]
+
+        # Get user blogs using pk
+
+        return Response(user_profile)
+
+    @csrf_exempt
+    def put(self, request, pk):
+        token = request.COOKIES.get('jwt')
+
+        # Validates and decodes token
         if not token:
             raise AuthenticationFailed('Unauthenticated')
 
@@ -185,7 +244,20 @@ class UserView(APIView):
         except jwt.ExpiredSignatureError:
             raise AuthenticationFailed('Unauthenticated')
 
-        user = User.objects.filter(id=payload['id']).first()
-        serializer = UserSerializer(user)
+        # Verifies if the user id coincides with the user profile id
+        if pk != payload['id']:
+            return Response({"error": "Not authorized to edit this profile page!"}, status=status.HTTP_401_UNAUTHORIZED)
 
-        return Response(serializer.data)
+        updated_user = request.data
+
+        user = User.objects.get(id=pk)
+        if user is None:
+            return Response({"error": "User not found!"}, status=status.HTTP_404_NOT_FOUND)
+        user.first_name = updated_user.get('first_name', user.first_name)
+        user.last_name = updated_user.get('last_name', user.last_name)
+        user.bio = updated_user.get('bio', user.bio)
+        user.save()
+
+        return Response({"message: User profile updated successfully!"}, status=status.HTTP_202_ACCEPTED)
+
+
