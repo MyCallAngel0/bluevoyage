@@ -186,7 +186,6 @@ class VerifyOTPView(APIView):
         response = Response()
         response.set_cookie(key='jwt', value=token, httponly=True)
         response.data = {
-            "jwt": token,
             "message": "Login successful"
         }
 
@@ -236,8 +235,7 @@ class UserProfileView(APIView):
         if not user:
             return Response({"error": "User not found"}, status=404)
         
-        #blogs_data = get_user_blogs(request, searched_user_id=pk)
-        blogs_data = 1
+        blogs_data = get_user_blogs(request, searched_user_id=pk)
 
         user_profile = {
             "user": user,
@@ -248,11 +246,9 @@ class UserProfileView(APIView):
 
     @csrf_exempt
     def put(self, request, pk):
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
-            return JsonResponse({"error": "Token is missing"}, status=403)
-
-        token = auth_header.split(" ")[1]
+        token = request.COOKIES.get('jwt')
+        if not token:
+            raise AuthenticationFailed('Unauthenticated')
 
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])

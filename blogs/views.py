@@ -27,11 +27,9 @@ def create_blog(request):
         content = data.get("content")
         tags = data.get("tags")
         access_level = data.get("access_level", AccessLevel.PUBLIC.value)
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
+        token = request.COOKIES.get('jwt')
+        if not token:
             return JsonResponse({"error": "Token is missing"}, status=403)
-
-        token = auth_header.split(" ")[1]
 
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
@@ -78,11 +76,9 @@ def get_blog(request):
         return JsonResponse({"error": "Method not allowed"}, status=405)
 
     try:
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
+        token = request.COOKIES.get('jwt')
+        if not token:
             return JsonResponse({"error": "Token is missing"}, status=403)
-
-        token = auth_header.split(" ")[1]
 
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
@@ -141,11 +137,9 @@ def get_blogs(request):
     try:
         page = int(request.GET.get("page", 1))
         limit = 5
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
+        token = request.COOKIES.get('jwt')
+        if not token:
             return JsonResponse({"error": "Token is missing"}, status=403)
-
-        token = auth_header.split(" ")[1]
 
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
@@ -217,11 +211,9 @@ def get_user_blogs(request, searched_user_id=None):
     try:
         page = int(request.GET.get("page", 1))
         limit = 5
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
+        token = request.COOKIES.get('jwt')
+        if not token:
             return JsonResponse({"error": "Token is missing"}, status=403)
-
-        token = auth_header.split(" ")[1]
 
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
@@ -319,11 +311,9 @@ def update_blog(request):
         tags = data.get("tags")
         access_level = data.get("access_level")
         blog_id = data.get("blog_id")
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
+        token = request.COOKIES.get('jwt')
+        if not token:
             return JsonResponse({"error": "Token is missing"}, status=403)
-
-        token = auth_header.split(" ")[1]
 
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
@@ -387,11 +377,9 @@ def delete_blog(request):
     
     try:
         blog_id = request.GET.get("blog_id")
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
+        token = request.COOKIES.get('jwt')
+        if not token:
             return JsonResponse({"error": "Token is missing"}, status=403)
-
-        token = auth_header.split(" ")[1]
 
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
@@ -434,11 +422,9 @@ def add_comment(request):
         data = json.loads(request.body)
         content = data.get("content")
         blog_id = data.get("blog_id")
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
+        token = request.COOKIES.get('jwt')
+        if not token:
             return JsonResponse({"error": "Token is missing"}, status=403)
-
-        token = auth_header.split(" ")[1]
 
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
@@ -499,11 +485,9 @@ def get_comments(request):
         page = int(request.GET.get("page", 1))
         blog_id = request.GET.get("blog_id")
         limit = 10
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
+        token = request.COOKIES.get('jwt')
+        if not token:
             return JsonResponse({"error": "Token is missing"}, status=403)
-
-        token = auth_header.split(" ")[1]
 
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
@@ -562,11 +546,9 @@ def edit_comment(request):
         data = json.loads(request.body)
         content = data.get("content")
         comment_id = data.get("comment_id")
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
+        token = request.COOKIES.get('jwt')
+        if not token:
             return JsonResponse({"error": "Token is missing"}, status=403)
-
-        token = auth_header.split(" ")[1]
 
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
@@ -620,12 +602,9 @@ def delete_comment(request):
     
     try:
         comment_id = request.GET.get("comment_id")
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
+        token = request.COOKIES.get('jwt')
+        if not token:
             return JsonResponse({"error": "Token is missing"}, status=403)
-
-        token = auth_header.split(" ")[1]
-
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
             user_id = payload.get('id')
@@ -674,11 +653,9 @@ def add_like(request):
     try:
         data = json.loads(request.body)
         blog_id = data.get("blog_id")
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
+        token = request.COOKIES.get('jwt')
+        if not token:
             return JsonResponse({"error": "Token is missing"}, status=403)
-
-        token = auth_header.split(" ")[1]
 
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
@@ -730,11 +707,9 @@ def get_likes(request):
 
     try:
         blog_id = request.GET.get("blog_id")
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
+        token = request.COOKIES.get('jwt')
+        if not token:
             return JsonResponse({"error": "Token is missing"}, status=403)
-
-        token = auth_header.split(" ")[1]
 
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
@@ -767,11 +742,9 @@ def delete_like(request):
     
     try:
         blog_id = request.GET.get("blog_id")
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
+        token = request.COOKIES.get('jwt')
+        if not token:
             return JsonResponse({"error": "Token is missing"}, status=403)
-
-        token = auth_header.split(" ")[1]
 
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
@@ -813,11 +786,9 @@ def add_bookmark(request):
     try:
         data = json.loads(request.body)
         blog_id = data.get("blog_id")
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
+        token = request.COOKIES.get('jwt')
+        if not token:
             return JsonResponse({"error": "Token is missing"}, status=403)
-
-        token = auth_header.split(" ")[1]
 
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
@@ -872,11 +843,9 @@ def get_bookmark_posts(request):
     try:
         page = int(request.GET.get("page", 1))
         limit = 5
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
+        token = request.COOKIES.get('jwt')
+        if not token:
             return JsonResponse({"error": "Token is missing"}, status=403)
-
-        token = auth_header.split(" ")[1]
 
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
@@ -946,11 +915,9 @@ def remove_bookmark(request):
     
     try:
         blog_id = request.GET.get("blog_id")
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
+        token = request.COOKIES.get('jwt')
+        if not token:
             return JsonResponse({"error": "Token is missing"}, status=403)
-
-        token = auth_header.split(" ")[1]
 
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
@@ -998,11 +965,9 @@ def search_by_tag(request):
         page = int(request.GET.get("page", 1))
         tags = request.GET.getlist("tags")
         limit = 5
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
+        token = request.COOKIES.get('jwt')
+        if not token:
             return JsonResponse({"error": "Token is missing"}, status=403)
-
-        token = auth_header.split(" ")[1]
 
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
@@ -1080,11 +1045,9 @@ def search_by_title(request):
         page = int(request.GET.get("page", 1))
         title = request.GET.get("title")
         limit = 5
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
+        token = request.COOKIES.get('jwt')
+        if not token:
             return JsonResponse({"error": "Token is missing"}, status=403)
-
-        token = auth_header.split(" ")[1]
 
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
@@ -1157,11 +1120,9 @@ def follow_user(request):
     try:
         data = json.loads(request.body)
         following_id = data.get("following_id")
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
+        token = request.COOKIES.get('jwt')
+        if not token:
             return JsonResponse({"error": "Token is missing"}, status=403)
-
-        token = auth_header.split(" ")[1]
 
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
@@ -1208,11 +1169,9 @@ def unfollow_user(request):
     
     try:
         following_id = request.GET.get("following_id")
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
+        token = request.COOKIES.get('jwt')
+        if not token:
             return JsonResponse({"error": "Token is missing"}, status=403)
-
-        token = auth_header.split(" ")[1]
 
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
@@ -1247,11 +1206,9 @@ def get_followers(request):
 
     try:
         following_id = request.GET.get("following_id")
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
+        token = request.COOKIES.get('jwt')
+        if not token:
             return JsonResponse({"error": "Token is missing"}, status=403)
-
-        token = auth_header.split(" ")[1]
 
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
