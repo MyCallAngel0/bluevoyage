@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:17
+    container_name: db_server
+    ports:
+      - 5433:5432
+    environment:
+      - POSTGRES_DB=bluevoyagedb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=123456
+    volumes:
+      - postgresdata:/var/lib/postgresql/data
+    env_file:
+      - .env
+  web:
+    build: .
+    container_name: wb_server
+    volumes:
+      - .:/app
+    working_dir: /app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    env_file:
+      - .env
+
+volumes:
+  postgresdata:

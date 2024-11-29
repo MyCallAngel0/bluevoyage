@@ -1,0 +1,493 @@
+/* app/styles/globals.css */
+
+/* Tailwind CSS Base */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Global Styles */
+
+.footer {
+  background-color: #333;
+  width: 100%;
+  color: white;
+  padding: 20px;
+  text-align: center;
+}
+
+body {
+  font-family: 'Baloo 2', sans-serif;
+  margin: 0;
+}
+
+/* Full-width top navbar with fixed position */
+.top-nav {
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 7%; /* Set fixed height for navbar */
+  transition: padding-left 0.3s ease;
+}
+
+/* Left side (Logo) */
+.top-nav .left-side {
+  flex-shrink: 0;
+}
+
+.top-nav .middle-side {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-grow: 1;
+  justify-content: center;
+  max-height: 60px; /* Prevent it from exceeding the height of the navbar */
+  overflow: hidden;
+  margin-left: calc(-75.99px);
+}
+
+/* Right side (Sign Up) */
+.top-nav .right-side {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  justify-content: flex-end;
+  max-height: 60px; /* Prevent it from exceeding the height of the navbar */
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.top-nav .signup-link {
+  color: white;
+  text-decoration: none;
+  font-size: 20px;
+  font-weight: bold;
+  padding: 10px;
+  padding-bottom: 0.1rem;
+  transition: color 0.3s ease;
+}
+
+.top-nav .signup-link:hover {
+  color: #3498db; /* Blue color on hover */
+}
+
+/* Navigation Links */
+.top-nav .nav-link {
+  color: white;
+  text-decoration: none;
+  font-size: 20px;
+  font-weight: bold;
+  padding: 10px;
+  padding-bottom: 0.1rem;
+  transition: color 0.3s ease;
+}
+
+.top-nav .nav-link:hover {
+  color: #3498db; /* Blue color on hover */
+}
+
+/* Logo */
+.top-nav .logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: 60px; /* Prevent it from exceeding the height of the navbar */
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* Desktop Nav */
+.desktop-nav {
+  background:transparent;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+/* Mobile Nav */
+.mobile-nav {
+  display: none;
+}
+
+/* Sidebar Styles */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 250px;
+  height: 100%;
+  background-color: #15162c;
+  color: white;
+  padding: 20px;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.3);
+  z-index: 1001;
+}
+
+.sidebar .close-button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+.sidebar-link {
+  display: block;
+  color: white;
+  text-decoration: none;
+  font-size: 18px;
+  font-weight: bold;
+  margin: 15px 0;
+  transition: color 0.3s ease;
+}
+
+.sidebar-link:hover {
+  color: #3498db;
+}
+
+.top-nav.sidebar-open {
+  padding-left: 260px; /* Adjust padding to leave space for the sidebar */
+}
+
+.sidebar-open .mobile-nav .logo {
+  position: absolute;
+  left: 260px;
+  top: 10px;
+  transition: left 0.3s ease;
+}
+
+.menu-button {
+  position: absolute;
+  top: 17px;
+  left: 12px;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.create-post-submit {
+  font-weight: bold;
+  color: white;
+  background-color: #0098E9;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  margin: 20px auto;
+  display: block;
+  display: flex;
+  justify-content: center;
+}
+
+.create-post-submit:hover {
+  background-color: #B63F00;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  transition: color 0.3s ease;
+  transform: scale(1.09);
+  cursor: pointer;
+  display: block;
+  display: flex;
+  justify-content: center;
+}
+
+.profile-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: #15162c;
+  background-blend-mode: multiply;
+  padding: 20px;
+}
+
+.profile-page h1 {
+  color: white;
+  font-size: 2rem;
+  margin-bottom: 20px;
+}
+
+.profile-page button {
+  font-weight: bold;
+  background-color: #7fffd4;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  margin: 20px auto;
+  display: block;
+  display: flex;
+  justify-content: center;
+  color: black;
+  transition: color 0.3s ease;
+}
+
+/* Spinner Animation */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: calc(100vh - 60px); /* Adjust for the top nav height */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: transparent;
+  z-index: 10; /* Ensure it appears above content */
+}
+
+.spinner {
+  border: 8px solid #f3f3f3; /* Light gray */
+  border-top: 8px solid #0077B6; /* Blue */
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1.5s linear infinite;
+}
+
+/* Spinner Animation Keyframes */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Mobile View: Adjust the navigation for smaller screens */
+@media (max-width: 768px) {
+  .desktop-nav {
+    display: none;
+  }
+
+  .mobile-nav {
+    display: block;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+  }
+  
+  .footer {
+    padding: 10px;
+  }
+
+  .top-nav {
+    flex-direction: column;
+    height: auto; /* Ensure no overflow */
+  }
+
+  .middle-side {
+    gap: 10px;
+    margin-top: 0; /* Remove any unnecessary top margin */
+    padding: 10px;
+  }
+
+  .top-nav .middle-side {
+    gap: 10px;
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .top-nav .logo {
+    font-size: 20px;
+    margin-bottom: 10px;
+  }
+
+  .top-nav .right-side {
+    margin-top: 10px; 
+    width: 100%;
+    text-align: center;
+  }
+
+  .top-nav .signup-link {
+    width: 100%;
+    text-align: center;
+    padding: 10px 0;
+  }
+
+  .top-nav .nav-link {
+    padding: 20px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .top-nav .search-bar {
+    margin-top: 10px;
+    text-align: center;
+  }
+  .top-nav .search-bar input {
+    transition: all 0.3s ease-in-out;
+    width: 3rem;
+  }
+  .top-nav .search-bar-icon{
+    display: none;
+  }  
+  
+  /* Show the search icon when the search input is expanded */
+  .search-bar input:focus + .search-bar-icon {
+    display: flex; /* Use flexbox to align it properly */
+  }
+}
+
+/* Search Bar Expansion Animation */
+.search-bar {
+  position: relative;
+  padding-top: 7px;
+}
+
+.search-bar input {
+  transition: all 0.3s ease-in-out;
+  width: 3rem; /* Initial width for the search bar */
+}
+
+.search-bar input:focus {
+  width: 16rem; /* Expanded width on focus */
+}
+
+.search-bar-icon {
+  position: absolute;
+  top: 0;
+  right: 0.3rem;
+  padding-top: 7px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Global Container Styles */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Global Heading Styles */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: bold;
+}
+
+/* Link Styles */
+a {
+  text-decoration: none;
+  color: #007bff;
+}
+
+/* Example of a global class for buttons */
+.btn {
+  padding: 10px 20px;
+  border-radius: 5px;
+  background-color: #5f044d;
+  color: white;
+  font-size: 1rem;
+}
+
+.btn:hover {
+  background-color: #7c0834;
+}
+
+/* Example Global Margin for Elements */
+.m-4 {
+  margin: 1rem;
+}
+
+/* Example Custom Global Background */
+.bg-custom {
+  background-color: #1e6877;
+}
+
+/* Custom Utility Class */
+.mainPage-headers {
+  text-align: center;
+  font-size: 2.5rem;
+  margin-bottom: 20px;
+}
+
+.mainPage-text {
+  text-align: center;
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+}
+
+.create-post {
+  font-weight: bold;
+  padding: 10px 20px;
+  border-radius: 5px;
+  background-color: #0098E9;
+  color: white;
+}
+
+.create-post:hover {
+  transform: scale(1.06);
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+  background-color: #B63F00;
+}
+
+.signup {
+  padding: 10px 20px;
+  border-radius: 5px;
+  background-color: #0098E9;
+  color: white;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.signup:hover {
+  background-color: #B63F00;
+  transform: scale(1.06);
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+}
+
+.text-large {
+  font-size: 1.25rem;
+}
+
+.explore-container {
+  padding-top: 60px;
+}
+
+.posts-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.post-card {
+  background-color: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.post-card h2 {
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+}
+
+.post-card p {
+  margin-bottom: 10px;
+}
+
+.post-card img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}

@@ -1,0 +1,12 @@
+get_likes - uses query parameters instead of json payload
+get_bookmark_posts - uses query parameters instead of json payload
+search_by_tag - uses query parameters instead of json payload
+update_blog - removes all/some interactions from a post (except the blog's user) depending on the privacy_status value update 
+get_bookmark_posts - adjusted for blog privacy settings
+search_by_tag - adjusted for blog privacy settings
+search_by_title - adjusted for blog privacy settings
+get_blogs - adjusted for blog privacy settings
+get_comments - fixed to get comments of a blog
+get_blog - adjusted for blog privacy settings
+get_user_blogs - created function for getting all the blogs belonging to a user
+add docker support for database
