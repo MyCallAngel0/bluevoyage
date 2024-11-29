@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  db:
+    image: lucianlupan/pbl:database
+    container_name: db_server
+    ports:
+      - 5433:5432
+    environment:
+      - POSTGRES_DB=bluevoyagedb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=123456
+    volumes:
+      - postgresdata:/var/lib/postgresql/data
+    env_file:
+      - .env
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: wb_server
+    volumes:
+      - .:/app
+    working_dir: /app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    env_file:
+      - .env
+
+volumes:
+  postgresdata:

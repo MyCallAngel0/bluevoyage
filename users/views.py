@@ -1,4 +1,5 @@
 from django.http import HttpResponse
+from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
@@ -13,6 +14,7 @@ from django.conf import settings
 from django.core.cache import cache
 import pyotp
 from django.views.decorators.csrf import csrf_exempt
+from blogs.urls import get_user_blogs
 
 
 class RegisterView(APIView):
@@ -23,15 +25,18 @@ class RegisterView(APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
+        # Generate and set the verification token
+        user.verify_token = uuid.uuid4()
+
         # User will get its account unverified until they will access the verification link sent to their email
         user = User.objects.filter(email=request.data.get('email')).first()
         user.is_active = False
-        user.verify_token = uuid.uuid4()
         user.save()
 
         self.send_verification_email(user)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 
     def send_verification_email(self, user):
         # Creates a verification link using the token created above
@@ -98,12 +103,12 @@ class LoginView(APIView):
         if user.is_staff:
             payload = {
                 'id': user.id,
-                'exp': datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=60),
-                'iat': datetime.datetime.now(datetime.UTC)
+                'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=60),
+                'iat': datetime.datetime.now(datetime.timezone.utc)
             }
 
-            token = jwt.encode(payload, 'secret', algorithm='HS256')
-            user.last_login = datetime.datetime.now(datetime.UTC)
+            token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+            user.last_login = datetime.datetime.now(datetime.timezone.utc)
             user.save()
 
             response = Response()
@@ -167,12 +172,12 @@ class VerifyOTPView(APIView):
         # Creates a JWT token once the user inserts the correct OTP
         payload = {
             'id': user.id,
-            'exp': datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=60),
-            'iat': datetime.datetime.now(datetime.UTC)
+            'exp': datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=60),
+            'iat': datetime.datetime.now(datetime.timezone.utc)
         }
 
-        token = jwt.encode(payload, 'secret', algorithm='HS256')
-        user.last_login = datetime.datetime.now(datetime.UTC)
+        token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+        user.last_login = datetime.datetime.now(datetime.timezone.utc)
         user.save()
 
         # Removes the OTP from the cache
@@ -181,7 +186,6 @@ class VerifyOTPView(APIView):
         response = Response()
         response.set_cookie(key='jwt', value=token, httponly=True)
         response.data = {
-            "jwt": token,
             "message": "Login successful"
         }
 
@@ -209,7 +213,7 @@ class UserView(APIView):
             raise AuthenticationFailed('Unauthenticated')
 
         try:
-            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
         except jwt.ExpiredSignatureError:
             raise AuthenticationFailed('Session expired!')
 
@@ -220,32 +224,42 @@ class UserView(APIView):
 
 
 class UserProfileView(APIView):
-    """API that gets you the profile page of a user"""
+    """API that gets the profile page of a user"""
     @csrf_exempt
     def get(self, request, pk):
-        user = (User.objects.filter(id=pk)
-                .values('id', 'username', 'email', 'first_name', 'last_name', 'bio').first())
-        user_profile = [user]
 
-        # Get user blogs using pk
+        user = (User.objects.filter(id=pk)
+                .values('id', 'username', 'email', 'first_name', 'last_name', 'bio')
+                .first())
+        
+        if not user:
+            return Response({"error": "User not found"}, status=404)
+        
+        blogs_data = get_user_blogs(request, searched_user_id=pk)
+
+        user_profile = {
+            "user": user,
+            "blogs": blogs_data.content
+        }
 
         return Response(user_profile)
 
     @csrf_exempt
     def put(self, request, pk):
         token = request.COOKIES.get('jwt')
-
-        # Validates and decodes token
         if not token:
             raise AuthenticationFailed('Unauthenticated')
 
         try:
-            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            user_id = payload.get('id')
         except jwt.ExpiredSignatureError:
-            raise AuthenticationFailed('Unauthenticated')
+            raise AuthenticationFailed("Token has expired.")
+        except jwt.InvalidTokenError:
+            raise AuthenticationFailed("Invalid token.")
 
         # Verifies if the user id coincides with the user profile id
-        if pk != payload['id']:
+        if pk != user_id:
             return Response({"error": "Not authorized to edit this profile page!"}, status=status.HTTP_401_UNAUTHORIZED)
 
         updated_user = request.data
