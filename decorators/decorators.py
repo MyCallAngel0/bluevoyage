@@ -3,6 +3,7 @@ import jwt
 
 
 def redirect_if_authenticated(redirect_url='/'):
+    """Decorator used for restricting access to links where users don't need to access if they're authenticated"""
     def decorator(view_func):
         def wrapper(request, *args, **kwargs):
             token = request.COOKIES.get('jwt')
@@ -23,6 +24,7 @@ def redirect_if_authenticated(redirect_url='/'):
 
 
 def login_required(redirect_url='/login'):
+    """Decorator used to restrict access to links where users need to be authenticated"""
     def decorator(view_func):
         def wrapper(request, *args, **kwargs):
             token = request.COOKIES.get('jwt')

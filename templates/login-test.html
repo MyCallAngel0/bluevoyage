@@ -340,6 +340,7 @@
 
                 const data = await response.json();
 
+                // Checks if the user is an admin in order to skip OTP verification
                 if ('jwt' in data) {
                     superuser = true;
                     window.location.href = '/test';
@@ -354,7 +355,7 @@
             }
         });
         if (!superuser) {
-            // Step 2: Handle OTP verification
+            // Step 2: Handle OTP verification if the user is not an admin
             verifyOtpButton.addEventListener('click', async function() {
                 const otp = document.getElementById('otp').value;
 
@@ -372,7 +373,7 @@
                         throw new Error('OTP verification failed');
                     }
 
-                    // Redirect to a secure page (e.g., dashboard) after successful OTP verification
+                    // Redirect to a secure page after successful OTP verification
                     window.location.href = '/test';
                 } catch (error) {
                     errorMessage.innerText = error.message;
