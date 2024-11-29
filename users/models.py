@@ -9,6 +9,8 @@ class User(AbstractUser):
     username = models.CharField(max_length=255, unique=True, blank=True)
     verify_token = models.UUIDField(blank=True, editable=False)
 
+    bio = models.CharField(max_length=255, blank=True)
+
     REQUIRED_FIELDS = []
 
     def save(self, *args, **kwargs):

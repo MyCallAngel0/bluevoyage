@@ -12,6 +12,7 @@ import uuid
 from django.conf import settings
 from django.core.cache import cache
 import pyotp
+from django.views.decorators.csrf import csrf_exempt
 
 
 class RegisterView(APIView):
@@ -188,9 +189,49 @@ class UserView(APIView):
         try:
             payload = jwt.decode(token, 'secret', algorithms=['HS256'])
         except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed('Session expired!')
+
+        user = User.objects.filter(id=payload['id']).values('id', 'username', 'email', 'first_name', 'last_name').first()
+
+        return Response(user)
+
+
+class UserProfileView(APIView):
+    @csrf_exempt
+    def get(self, request, pk):
+        user = (User.objects.filter(id=pk)
+                .values('id', 'username', 'email', 'first_name', 'last_name', 'bio').first())
+        user_profile = [user]
+
+        # Get user blogs using pk
+
+        return Response(user_profile)
+
+    @csrf_exempt
+    def put(self, request, pk):
+        token = request.COOKIES.get('jwt')
+
+        if not token:
             raise AuthenticationFailed('Unauthenticated')
 
-        user = User.objects.filter(id=payload['id']).first()
-        serializer = UserSerializer(user)
+        try:
+            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed('Unauthenticated')
 
-        return Response(serializer.data)
+        if pk != payload['id']:
+            return Response({"error": "Not authorized to edit this profile page!"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        updated_user = request.data
+
+        user = User.objects.get(id=pk)
+        if user is None:
+            return Response({"error": "User not found!"}, status=status.HTTP_404_NOT_FOUND)
+        user.first_name = updated_user.get('first_name', user.first_name)
+        user.last_name = updated_user.get('last_name', user.last_name)
+        user.bio = updated_user.get('bio', user.bio)
+        user.save()
+
+        return Response({"message: User profile updated successfully!"}, status=status.HTTP_202_ACCEPTED)
+
+
