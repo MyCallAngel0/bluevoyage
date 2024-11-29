@@ -16,7 +16,7 @@ from django_ratelimit.decorators import ratelimit
 # TODO: check error handlers to not reveal secure info
 
 @csrf_exempt
-@ratelimit(key='ip', rate='5/m')
+@ratelimit(key='ip', rate='10/m')
 def create_blog(request):
     if request.method != 'POST':
         return JsonResponse({"error": "Method not allowed"}, status=405)
@@ -70,7 +70,7 @@ def create_blog(request):
         return JsonResponse({"error": str(e)}, status=500)
 
 @csrf_exempt
-@ratelimit(key='ip', rate='5/m')
+@ratelimit(key='ip', rate='10/m')
 def get_blog(request):
     if request.method != 'GET':
         return JsonResponse({"error": "Method not allowed"}, status=405)
@@ -129,7 +129,7 @@ def get_blog(request):
         return JsonResponse({"error": str(e)}, status=500)
 
 @csrf_exempt
-@ratelimit(key='ip', rate='5/m')
+@ratelimit(key='ip', rate='10/m')
 def get_blogs(request):
     if request.method != 'GET':
         return JsonResponse({"error": "Method not allowed"}, status=405)
@@ -203,7 +203,7 @@ def get_blogs(request):
         return JsonResponse({"error": str(e)}, status=500)
     
 @csrf_exempt
-@ratelimit(key='ip', rate='5/m')
+@ratelimit(key='ip', rate='10/m')
 def get_user_blogs(request, searched_user_id=None):
     if request.method != 'GET':
         return JsonResponse({"error": "Method not allowed"}, status=405)
@@ -299,7 +299,7 @@ def get_user_blogs(request, searched_user_id=None):
         return JsonResponse({"error": str(e)}, status=500)
 
 @csrf_exempt
-@ratelimit(key='ip', rate='5/m')
+@ratelimit(key='ip', rate='10/m')
 def update_blog(request):
     if request.method != 'PUT':
         return JsonResponse({"error": "Method not allowed"}, status=405)
@@ -370,7 +370,7 @@ def update_blog(request):
 
 
 @csrf_exempt
-@ratelimit(key='ip', rate='5/m')
+@ratelimit(key='ip', rate='10/m')
 def delete_blog(request):
     if request.method != 'DELETE':
         return JsonResponse({"error": "Method not allowed"}, status=405)
@@ -413,7 +413,7 @@ def delete_blog(request):
         return JsonResponse({"error": str(e)}, status=500)
 
 @csrf_exempt
-@ratelimit(key='ip', rate='5/m')
+@ratelimit(key='ip', rate='10/m')
 def add_comment(request):
     if request.method != 'POST':
         return JsonResponse({"error": "Method not allowed"}, status=405)
@@ -476,7 +476,7 @@ def add_comment(request):
         return JsonResponse({"error": str(e)}, status=500)
 
 @csrf_exempt
-@ratelimit(key='ip', rate='5/m')
+@ratelimit(key='ip', rate='10/m')
 def get_comments(request):
     if request.method != 'GET':
         return JsonResponse({"error": "Method not allowed"}, status=405)
@@ -537,7 +537,7 @@ def get_comments(request):
         return JsonResponse({"error": str(e)}, status=500)
 
 @csrf_exempt
-@ratelimit(key='ip', rate='5/m')
+@ratelimit(key='ip', rate='10/m')
 def edit_comment(request):
     if request.method != 'PUT':
         return JsonResponse({"error": "Method not allowed"}, status=405)
@@ -595,7 +595,7 @@ def edit_comment(request):
         return JsonResponse({"error": str(e)}, status=500)
     
 @csrf_exempt
-@ratelimit(key='ip', rate='5/m')
+@ratelimit(key='ip', rate='10/m')
 def delete_comment(request):
     if request.method != 'DELETE':
         return JsonResponse({"error": "Method not allowed"}, status=405)
@@ -645,7 +645,7 @@ def delete_comment(request):
 
 
 @csrf_exempt
-@ratelimit(key='ip', rate='5/m')
+@ratelimit(key='ip', rate='10/m')
 def add_like(request):
     if request.method != 'POST':
         return JsonResponse({"error": "Method not allowed"}, status=405)
@@ -700,7 +700,7 @@ def add_like(request):
         return JsonResponse({"error": str(e)}, status=500)
 
 @csrf_exempt
-@ratelimit(key='ip', rate='5/m')
+@ratelimit(key='ip', rate='10/m')
 def get_likes(request):
     if request.method != 'GET':
         return JsonResponse({"error": "Method not allowed"}, status=405)
@@ -735,7 +735,7 @@ def get_likes(request):
         return JsonResponse({"error": str(e)}, status=500)
     
 @csrf_exempt
-@ratelimit(key='ip', rate='5/m')
+@ratelimit(key='ip', rate='10/m')
 def delete_like(request):
     if request.method != 'DELETE':
         return JsonResponse({"error": "Method not allowed"}, status=405)
@@ -778,7 +778,7 @@ def delete_like(request):
         return JsonResponse({"error": str(e)}, status=500)
 
 @csrf_exempt
-@ratelimit(key='ip', rate='5/m')
+@ratelimit(key='ip', rate='10/m')
 def add_bookmark(request):
     if request.method != 'POST':
         return JsonResponse({"error": "Method not allowed"}, status=405)
@@ -834,7 +834,7 @@ def add_bookmark(request):
 
 
 @csrf_exempt
-@ratelimit(key='ip', rate='5/m')
+@ratelimit(key='ip', rate='10/m')
 def get_bookmark_posts(request):
     # TODO: Maybe randomize how bookmarked posts are shown
     if request.method != 'GET':
@@ -908,7 +908,7 @@ def get_bookmark_posts(request):
         return JsonResponse({"error": str(e)}, status=500)
 
 @csrf_exempt
-@ratelimit(key='ip', rate='5/m')
+@ratelimit(key='ip', rate='10/m')
 def remove_bookmark(request):
     if request.method != 'DELETE':
         return JsonResponse({"error": "Method not allowed"}, status=405)
@@ -956,7 +956,7 @@ def remove_bookmark(request):
         return JsonResponse({"error": str(e)}, status=500)
 
 @csrf_exempt
-@ratelimit(key='ip', rate='5/m')
+@ratelimit(key='ip', rate='10/m')
 def search_by_tag(request):
     if request.method != 'GET':
         return JsonResponse({"error": "Method not allowed"}, status=405)
@@ -1036,7 +1036,7 @@ def search_by_tag(request):
         return JsonResponse({"error": str(e)}, status=500)
 
 @csrf_exempt
-@ratelimit(key='ip', rate='5/m')
+@ratelimit(key='ip', rate='10/m')
 def search_by_title(request):
     if request.method != 'GET':
         return JsonResponse({"error": "Method not allowed"}, status=405)
@@ -1112,7 +1112,7 @@ def search_by_title(request):
         return JsonResponse({"error": str(e)}, status=500)
 
 @csrf_exempt
-@ratelimit(key='ip', rate='5/m')
+@ratelimit(key='ip', rate='10/m')
 def follow_user(request):
     if request.method != 'POST':
         return JsonResponse({"error": "Method not allowed"}, status=405)
@@ -1162,7 +1162,7 @@ def follow_user(request):
 
 
 @csrf_exempt
-@ratelimit(key='ip', rate='5/m')
+@ratelimit(key='ip', rate='10/m')
 def unfollow_user(request):
     if request.method != 'DELETE':
         return JsonResponse({"error": "Method not allowed"}, status=405)
@@ -1199,7 +1199,7 @@ def unfollow_user(request):
         return JsonResponse({"error": str(e)}, status=500)
 
 @csrf_exempt
-@ratelimit(key='ip', rate='5/m')
+@ratelimit(key='ip', rate='10/m')
 def get_followers(request):
     if request.method != 'GET':
         return JsonResponse({"error": "Method not allowed"}, status=405)
@@ -1233,6 +1233,6 @@ def get_followers(request):
         return JsonResponse({"error": str(e)}, status=500)
 
 @csrf_exempt
-@ratelimit(key='ip', rate='5/m')
+@ratelimit(key='ip', rate='10/m')
 def get_replies():
     pass
