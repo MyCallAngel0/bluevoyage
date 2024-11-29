@@ -7,17 +7,15 @@ from django.db.models import Q
 from .models import *
 from users.models import *
 # TODO: Remove @csrf_exempt after done debugging
-# TODO: Change how user_id is handled
 # TODO: Add comment likes
 # TODO: Add picture support
 # TODO: Remove ability to add interactions on private posts (except for the blog user) Minor - add verification for every method (i.e., adding comments to make sure that the user has access to that post)
 # TODO: Create a docker image for the database
 # TODO: Insecure Deserialization - Exploitation of improperly deserialized objects to execute arbitrary code
 # TODO: DOS - make a timeout per user requests
-# TODO: Validate inputs (+ check how the django orm works and its vulnerabilities)
 # TODO: check error handlers to not reveal secure info
 # TODO: Secure session management and ensure proper timeout and invalidation mechanisms
-# TODO: Regularly update and patch server software to close known vulnerabilities.
+# TODO: Check if request.user.id is received from jwt auth
 
 @csrf_exempt
 def create_blog(request):
@@ -30,8 +28,23 @@ def create_blog(request):
         content = data.get("content")
         tags = data.get("tags")
         access_level = data.get("access_level", AccessLevel.PUBLIC.value)
-        # TODO: change the way user_id is handled
-        user_id = data.get("user_id")
+        user_id = request.user.id
+
+        if not user_id:
+            return JsonResponse({"error": "login required for this action"}, status=403)
+
+        if not title or len(title) > 50:
+            return JsonResponse({"error": "Title is required and cannot exceed 50 characters"}, status=400)
+        
+        if not content or len(content) > 2500:
+            return JsonResponse({"error": "Content is required and cannot exceed 2500 characters"}, status=400)
+        
+        if not tags or len(tags) > 10:
+            return JsonResponse({"error": "Tags are required and cannot have more than 10 entries"}, status=400)
+        
+        for tag in tags:
+            if len(tag) > 30:
+                return JsonResponse({"error": f"Tag '{tag}' exceeds the maximum length of 30 characters"}, status=400)
 
         if title:
             blog = Blogs.objects.create(
@@ -55,35 +68,41 @@ def get_blog(request):
 
     try:
         blog_id = request.GET.get("blog_id")
-        user_id = request.GET.get("user_id")
+        user_id = request.user.id
 
-        if blog_id and user_id:
-            blog = get_object_or_404(Blogs, blog_id=blog_id)
-            user = get_object_or_404(User, id=user_id)
-            if blog:
-                blog_data = {
-                    "blog_id": blog.blog_id,
-                    "title": blog.title,
-                    "content": blog.content,
-                    "tags": blog.tags,
-                    "access_level": blog.access_level,
-                    "created_at": blog.created_at,
-                    "updated_at": blog.updated_at,
-                    "blog_creator": user.username,
-                }
-                
-                if blog.access_level == 3 or blog.user_id == user.id:
+        if not blog_id.isdigit():
+            return JsonResponse({"error": "blog_id must be an integer"}, status=400)
+
+        if not blog_id:
+            return JsonResponse({"error": "blog_id not specified in query parameters"}, status=400)
+        
+        if not user_id:
+            return JsonResponse({"error": "login required for this action"}, status=403)
+        
+        blog = get_object_or_404(Blogs, blog_id=blog_id)
+        user = get_object_or_404(User, id=user_id)
+        if blog:
+            blog_data = {
+                "blog_id": blog.blog_id,
+                "title": blog.title,
+                "content": blog.content,
+                "tags": blog.tags,
+                "access_level": blog.access_level,
+                "created_at": blog.created_at,
+                "updated_at": blog.updated_at,
+                "blog_creator": user.username,
+            }
+            
+            if blog.access_level == 3 or blog.user_id == user.id:
+                return JsonResponse({"blog": blog_data}, status=200)
+            elif blog.access_level == 2:
+                is_follower = Followers.objects.filter(follower_id=user.id, following_id=blog.user_id).exists()
+                if is_follower:
                     return JsonResponse({"blog": blog_data}, status=200)
-                elif blog.access_level == 2:
-                    is_follower = Followers.objects.filter(follower_id=user.id, following_id=blog.user_id).exists()
-                    if is_follower:
-                        return JsonResponse({"blog": blog_data}, status=200)
-                else:
-                    return JsonResponse({"error": "Not allowed"}, status=403)
             else:
-                return JsonResponse({"error": "Blog not found"}, status=404)
+                return JsonResponse({"error": "Not allowed"}, status=403)
         else:
-            return JsonResponse({"error": "blog_id/user_id not specified in query parameters"}, status=400)
+            return JsonResponse({"error": "Blog not found"}, status=404)
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
@@ -95,16 +114,11 @@ def get_blogs(request):
 
     try:
         page = int(request.GET.get("page", 1))
-        user_id = request.GET.get("user_id")
+        user_id = request.user.id
         limit = 5
 
         if not user_id:
-            return JsonResponse({"error": "user_id is required"}, status=400)
-        
-        try:
-            user_id = int(user_id)
-        except ValueError:
-            return JsonResponse({"error": "Invalid data type"}, status=400)
+            return JsonResponse({"error": "login required for this action"}, status=403)
 
         user = get_object_or_404(User, id=user_id)
 
@@ -164,11 +178,14 @@ def get_user_blogs(request):
     try:
         page = int(request.GET.get("page", 1))
         searched_user_id = request.GET.get("searched_user_id")
-        user_id = request.GET.get("user_id")
+        user_id = request.user.id
         limit = 5
 
-        if not user_id or not searched_user_id:
-            return JsonResponse({"error": "user_id & searched_user_id are required"}, status=400)
+        if not user_id:
+            return JsonResponse({"error": "login required for this action"}, status=403)
+
+        if not searched_user_id:
+            return JsonResponse({"error": "searched_user_id is required"}, status=400)
         
         try:
             user_id = int(user_id)
@@ -243,13 +260,13 @@ def update_blog(request):
         tags = data.get("tags")
         access_level = data.get("access_level")
         blog_id = data.get("blog_id")
-        user_id = data.get("user_id")
+        user_id = request.user.id
+
+        if not user_id:
+            return JsonResponse({"error": "login required for this action"}, status=403)
 
         if not blog_id:
             return JsonResponse({"error": "blog_id is required"}, status=400)
-        
-        if not user_id:
-            return JsonResponse({"error": "user_id is required"}, status=400)
 
         blog = get_object_or_404(Blogs, blog_id=blog_id)
         user = get_object_or_404(User, id=user_id)
@@ -298,20 +315,18 @@ def delete_blog(request):
     
     try:
         blog_id = request.GET.get("blog_id")
-        user_id = request.GET.get("user_id")
+        user_id = request.user.id
+
+        if not user_id:
+            return JsonResponse({"error": "login required for this action"}, status=403)
         
-        if not blog_id or not user_id:
-            return JsonResponse({"error": "blog_id & user_id are required"}, status=400)
+        if not blog_id:
+            return JsonResponse({"error": "blog_id is required"}, status=400)
 
         try:
             blog_id = int(blog_id)
         except ValueError:
             return JsonResponse({"error": "Invalid blog_id"}, status=400)
-
-        try:
-            user_id = int(user_id)
-        except ValueError:
-            return JsonResponse({"error": "Invalid user_id"}, status=400)
 
         blog = get_object_or_404(Blogs, blog_id=blog_id)
 
@@ -333,16 +348,17 @@ def add_comment(request):
     try:
         data = json.loads(request.body)
         content = data.get("content")
-        #TODO: Might need to change how ids are handled
         blog_id = data.get("blog_id")
-        user_id = data.get("user_id")
+        user_id = request.user.id
 
+        if not user_id:
+            return JsonResponse({"error": "login required for this action"}, status=403)
+        
         if not content:
             return JsonResponse({"error": "Content is required"}, status=400)
+        
         if not blog_id:
             return JsonResponse({"error": "Blog ID is required"}, status=400)
-        if not user_id:
-            return JsonResponse({"error": "User ID is required"}, status=400)
 
         blog = get_object_or_404(Blogs, pk=blog_id)
         user = get_object_or_404(User, pk=user_id)
@@ -377,7 +393,11 @@ def get_comments(request):
     try:
         page = int(request.GET.get("page", 1))
         blog_id = request.GET.get("blog_id")
+        user_id = request.user.id
         limit = 10
+
+        if not user_id:
+            return JsonResponse({"error": "login required for this action"}, status=403)
 
         blog = get_object_or_404(Blogs, blog_id=blog_id)
 
@@ -424,7 +444,10 @@ def edit_comment(request):
         data = json.loads(request.body)
         content = data.get("content")
         comment_id = data.get("comment_id")
-        user_id = data.get("user_id")
+        user_id = request.user.id
+
+        if not user_id:
+            return JsonResponse({"error": "login required for this action"}, status=403)
 
         if not comment_id:
             return JsonResponse({"error": "comment_id is required"}, status=400)
@@ -433,7 +456,6 @@ def edit_comment(request):
             return JsonResponse({"error": "Invalid comment_id format"}, status=400)
 
         comment = get_object_or_404(Comments, comment_id=comment_id)
-        # TODO: Remind frontend to send the id with the json
         if user_id != comment.user_id:
             return JsonResponse({"error": "Unauthorized action"}, status=403)
 
@@ -467,10 +489,13 @@ def delete_comment(request):
     
     try:
         comment_id = request.GET.get("comment_id")
-        user_id = request.GET.get("user_id")
+        user_id = request.user.id
         
-        if not comment_id or not user_id:
-            return JsonResponse({"error": "comment_id & user_id are required"}, status=400)
+        if not user_id:
+            return JsonResponse({"error": "login required for this action"}, status=403)
+
+        if not comment_id:
+            return JsonResponse({"error": "comment_id is required"}, status=400)
 
         try:
             comment_id = int(comment_id)
@@ -505,12 +530,13 @@ def add_like(request):
     try:
         data = json.loads(request.body)
         blog_id = data.get("blog_id")
-        user_id = data.get("user_id")
+        user_id = request.user.id
+
+        if not user_id:
+            return JsonResponse({"error": "login required for this action"}, status=403)
 
         if not blog_id:
             return JsonResponse({"error": "Blog ID is required"}, status=400)
-        if not user_id:
-            return JsonResponse({"error": "User ID is required"}, status=400)
 
         blog = get_object_or_404(Blogs, pk=blog_id)
         user = get_object_or_404(User, pk=user_id)
@@ -540,6 +566,13 @@ def get_likes(request):
 
     try:
         blog_id = request.GET.get("blog_id")
+        user_id = request.user.id
+
+        if not user_id:
+            return JsonResponse({"error": "login required for this action"}, status=403)
+        
+        if not blog_id:
+            return JsonResponse({"error": "blog_id is required"}, status=400)
 
         likes = Interactions.objects.filter(blog_id=blog_id, type=InteractionType.LIKE.value).count()
 
@@ -557,20 +590,18 @@ def delete_like(request):
     
     try:
         blog_id = request.GET.get("blog_id")
-        user_id = request.GET.get("user_id")
+        user_id = request.user.id
+
+        if not user_id:
+            return JsonResponse({"error": "login required for this action"}, status=403)
         
-        if not blog_id or not user_id:
-            return JsonResponse({"error": "blog_id & user_id are required"}, status=400)
+        if not blog_id:
+            return JsonResponse({"error": "blog_id is required"}, status=400)
 
         try:
             blog_id = int(blog_id)
         except ValueError:
             return JsonResponse({"error": "Invalid blog_id"}, status=400)
-
-        try:
-            user_id = int(user_id)
-        except ValueError:
-            return JsonResponse({"error": "Invalid user_id"}, status=400)
 
         like = get_object_or_404(Interactions, blog_id=blog_id, user_id=user_id, type=InteractionType.LIKE.value)
 
@@ -592,12 +623,13 @@ def add_bookmark(request):
     try:
         data = json.loads(request.body)
         blog_id = data.get("blog_id")
-        user_id = data.get("user_id")
+        user_id = request.user.id
+
+        if not user_id:
+            return JsonResponse({"error": "login required for this action"}, status=403)
 
         if not blog_id:
             return JsonResponse({"error": "Blog ID is required"}, status=400)
-        if not user_id:
-            return JsonResponse({"error": "User ID is required"}, status=400)
 
         blog = get_object_or_404(Blogs, pk=blog_id)
         user = get_object_or_404(User, pk=user_id)
@@ -629,11 +661,11 @@ def get_bookmark_posts(request):
 
     try:
         page = int(request.GET.get("page", 1))
-        user_id = request.GET.get("user_id")
+        user_id = request.user.id
         limit = 5
 
         if not user_id:
-            return JsonResponse({"error": "User ID is required"}, status=400)
+            return JsonResponse({"error": "login required for this action"}, status=403)
 
         bookmarked_queryset = Interactions.objects.filter(user_id=user_id, type=InteractionType.BOOKMARK.value)
         bookmarked_blog_ids = bookmarked_queryset.values_list("blog_id", flat=True)
@@ -691,10 +723,13 @@ def remove_bookmark(request):
     
     try:
         blog_id = request.GET.get("blog_id")
-        user_id = request.GET.get("user_id")
+        user_id = request.user.id
+
+        if not user_id:
+            return JsonResponse({"error": "login required for this action"}, status=403)
         
-        if not blog_id or not user_id:
-            return JsonResponse({"error": "blog_id & user_id are required"}, status=400)
+        if not blog_id:
+            return JsonResponse({"error": "blog_id is required"}, status=400)
 
         try:
             blog_id = int(blog_id)
@@ -726,16 +761,14 @@ def search_by_tag(request):
     try:
         page = int(request.GET.get("page", 1))
         tags = request.GET.getlist("tags")
-        user_id = request.GET.get("user_id")
+        user_id = request.user.id
         limit = 5
 
-        if not user_id or not tags:
-            return JsonResponse({"error": "user_id & tags are required"}, status=400)
-        
-        try:
-            user_id = int(user_id)
-        except ValueError:
-            return JsonResponse({"error": "Invalid data type"}, status=400)
+        if not user_id:
+            return JsonResponse({"error": "login required for this action"}, status=403)
+
+        if not tags:
+            return JsonResponse({"error": "tags are required"}, status=400)
 
         user = get_object_or_404(User, id=user_id)
 
@@ -797,16 +830,14 @@ def search_by_title(request):
     try:
         page = int(request.GET.get("page", 1))
         title = request.GET.get("title")
-        user_id = request.GET.get("user_id")
+        user_id = request.user.id
         limit = 5
 
-        if not user_id or not title:
-            return JsonResponse({"error": "user_id & title are required"}, status=400)
-        
-        try:
-            user_id = int(user_id)
-        except ValueError:
-            return JsonResponse({"error": "Invalid data type"}, status=400)
+        if not user_id:
+            return JsonResponse({"error": "login required for this action"}, status=403)
+
+        if not title:
+            return JsonResponse({"error": "title is required"}, status=400)
 
         user = get_object_or_404(User, id=user_id)
 
@@ -863,11 +894,14 @@ def follow_user(request):
 
     try:
         data = json.loads(request.body)
-        follower_id = data.get("follower_id")
+        follower_id = request.user.id
         following_id = data.get("following_id")
 
-        if not follower_id or not following_id:
-            return JsonResponse({"error": "Follower/Following ID are required"}, status=400)
+        if not follower_id:
+            return JsonResponse({"error": "login required for this action"}, status=403)
+
+        if not following_id:
+            return JsonResponse({"error": "Following ID is required"}, status=400)
         
         if follower_id == following_id:
             return JsonResponse({"error": "Users cannot follow themselves"}, status=400)
@@ -898,11 +932,14 @@ def unfollow_user(request):
         return JsonResponse({"error": "Method not allowed"}, status=405)
     
     try:
-        follower_id = request.GET.get("follower_id")
+        follower_id = request.user.id
         following_id = request.GET.get("following_id")
+
+        if not follower_id:
+            return JsonResponse({"error": "login required for this action"}, status=403)
         
-        if not follower_id or not following_id:
-            return JsonResponse({"error": "Follower/Following ID are required"}, status=400)
+        if not following_id:
+            return JsonResponse({"error": "Following ID is required"}, status=400)
         
         follower = get_object_or_404(User, id=follower_id)
         following = get_object_or_404(User, id=following_id)
@@ -922,6 +959,10 @@ def get_followers(request):
 
     try:
         following_id = request.GET.get("following_id")
+        user_id = request.user.id
+
+        if not user_id:
+            return JsonResponse({"error": "login required for this action"}, status=403)
 
         following = get_object_or_404(User, id=following_id)
 

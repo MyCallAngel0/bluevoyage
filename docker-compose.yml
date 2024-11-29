@@ -2,9 +2,7 @@ version: '3.8'
 
 services:
   db:
-    build:
-      context: .
-      dockerfile: Dockerfile.db
+    image: lucianlupan/pbl:database
     container_name: db_server
     ports:
       - 5433:5432
