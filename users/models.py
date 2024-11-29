@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 
 class User(AbstractUser):
+    """Class used to create the table for users in the database"""
     first_name = models.CharField(max_length=255, blank=True)
     last_name = models.CharField(max_length=255, blank=True)
     email = models.EmailField(max_length=255, unique=True)
@@ -10,6 +11,7 @@ class User(AbstractUser):
     verify_token = models.UUIDField(blank=True, editable=False)
 
     bio = models.CharField(max_length=255, blank=True)
+    # profile_image = models.ImageField()
 
     REQUIRED_FIELDS = []
 
@@ -19,6 +21,7 @@ class User(AbstractUser):
             self.username = self.email
         super(User, self).save(*args, **kwargs)
 
+    # Sets the table name in the database
     class Meta:
         db_table = 'auth_user'
 
