@@ -1,4 +1,5 @@
 from django.http import HttpResponse
+from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
@@ -227,38 +228,42 @@ class UserProfileView(APIView):
     """API that gets the profile page of a user"""
     @csrf_exempt
     def get(self, request, pk):
+
         user = (User.objects.filter(id=pk)
                 .values('id', 'username', 'email', 'first_name', 'last_name', 'bio')
                 .first())
-
+        
         if not user:
             return Response({"error": "User not found"}, status=404)
-
-        # Pass the pk to get_user_blogs function to retrieve blogs for this user
-        blogs_data = get_user_blogs(request)
+        
+        #blogs_data = get_user_blogs(request, searched_user_id=pk)
+        blogs_data = 1
 
         user_profile = {
             "user": user,
-            "blogs": blogs_data
+            "blogs": blogs_data.content
         }
 
         return Response(user_profile)
 
     @csrf_exempt
     def put(self, request, pk):
-        token = request.COOKIES.get('jwt')
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return JsonResponse({"error": "Token is missing"}, status=403)
 
-        # Validates and decodes token
-        if not token:
-            raise AuthenticationFailed('Unauthenticated')
+        token = auth_header.split(" ")[1]
 
         try:
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            user_id = payload.get('id')
         except jwt.ExpiredSignatureError:
-            raise AuthenticationFailed('Unauthenticated')
+            raise AuthenticationFailed("Token has expired.")
+        except jwt.InvalidTokenError:
+            raise AuthenticationFailed("Invalid token.")
 
         # Verifies if the user id coincides with the user profile id
-        if pk != payload['id']:
+        if pk != user_id:
             return Response({"error": "Not authorized to edit this profile page!"}, status=status.HTTP_401_UNAUTHORIZED)
 
         updated_user = request.data
