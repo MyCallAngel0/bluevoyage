@@ -6,6 +6,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login Page with OTP</title>
     <style>
+        .signup-button {
+            position: fixed; 
+            top: 20px; 
+            right: 20px; 
+            background-color: #1C342F; 
+            color: rgb(233, 233, 233); 
+    
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            border: 0.01em solid #3d4a48
+        }
+
+        .search-container {
+            position: fixed;
+            top: 10px;
+            left: 50px;
+            display: flex;
+            align-items: center;
+            background-color: transparent; 
+            padding: 5px 10px;
+            border-radius: 5px;
+            backdrop-filter: blur(5px); 
+        }
+
+        .search-container input {
+            border: none;
+            outline: none;
+            background: hsla(0, 0%, 0%, 0.032);
+            font-size: 14px;
+            padding: 18px 0 18px 18px;
+            width: 400px;
+            height: 1px;
+            border-radius: 20px;
+            color: #000000;
+        }
+
+        .search-container .search-icon {
+            font-size: 20px;
+            color: #535353; 
+            margin-right: 10px; 
+        }
+
+
+        .search-container input:focus {
+            border: 2px solid #00741f; 
+            border-radius: 20px;  
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -29,7 +80,7 @@
 }   
         .wrapper h1 {
             font-size: 65px;
-            color: #fff;
+            color: #1C342F;
             text-align: center;
             margin-top: -50px;
             padding-bottom: 30px;
@@ -144,10 +195,69 @@
             text-decoration: none;
             font-weight: 600;
         }
+        .bottom-links {
+            position: fixed;
+            bottom: 20px;
+             left: 20px;
+            font-size: 14px;
+            color: #fff;
+            display: flex;
+            gap: 20px; 
+        }
+
+        .bottom-links a {
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .bottom-links a:hover {
+            text-decoration: underline;
+        }
+        .otp-input{
+            position: relative;
+            height: 40px;
+            margin: 10px 0;
+            margin-left: 70px;
+        }
+        .otp-input input {
+            width: 200px;
+            height: 45px;
+            border: 2px solid rgb(255, 253, 253);
+            outline: none;
+            border-radius: 10px;
+            font-size: 16px;
+            color: #000000;
+            padding: 20px 20px 20px;
+            top: 50%;
+        }
+        .otp-button {
+            width: 200px;
+            height: 35px;
+            background: #1C342F;
+            outline: none;
+            border-radius: 5px;
+            box-shadow: 0 0 10px #0000001a;
+            cursor: pointer;
+            font-size: 16px;
+            color: #ffffff;
+            font-weight: 700;
+            border: 0.01em solid #3d4a48; 
+            margin-left: 70px;
+        }
     </style>
 </head>
 <body>
-    
+    <button class="signup-button">Sign up</button>
+    <div class="search-container">
+        <IoSearchOutline className="search-icon" />
+        <input type="text" placeholder="Search BlueVoyage" />
+    </div>
+    <div class="bottom-links">
+        <a href="your-terms-link-here" target="_blank" rel="noopener noreferrer">Terms</a>
+        <a href="your-privacy-link-here" target="_blank" rel="noopener noreferrer">Privacy</a>
+        <a href="your-support-link-here" target="_blank" rel="noopener noreferrer">Support</a>
+        <a href="your-support-link-here" target="_blank" rel="noopener noreferrer">Information</a>
+    </div>
     <div class="wrapper">
 
         <!-- Step 1: Username & Password -->
@@ -187,10 +297,13 @@
         </div>
         </form>        
         <!-- Step 2: OTP Input (hidden until needed) -->
+        
         <div id="otp-section">
-            <h2>Enter OTP</h2>
-            <input type="text" id="otp" placeholder="Enter OTP" required>
-            <button id="verify-otp">Verify OTP</button>
+            <div class="otp-input">
+                <input type="text" id="otp" placeholder="Enter OTP" required> 
+            </div>
+            
+            <button class = "otp-button" id="verify-otp">Verify OTP</button>
         </div>
 
         <div id="error-message"></div>
